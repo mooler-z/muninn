@@ -52,9 +52,6 @@ export function SiteHeader() {
           <span className="mn-brand-name">Muninn</span>
         </span>
         <span className="mn-nav-side">
-          <a className="mn-nav-link" href="#install">
-            Install
-          </a>
           <ThemeToggle />
         </span>
       </div>

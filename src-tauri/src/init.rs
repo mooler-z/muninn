@@ -471,7 +471,18 @@ fn write_atomically(path: &Path, value: &Value) -> std::io::Result<()> {
 /// development. Both layouts are checked so `init` works from a built bundle
 /// and from `cargo run` alike.
 fn shim_path() -> Option<PathBuf> {
-    let exe = std::env::current_exe().ok()?;
+    shim_near(&std::env::current_exe().ok()?)
+}
+
+/// The lookup itself, separated so a test can hand it a path.
+///
+/// The exe is canonicalised **first**. The installer puts `muninn` on PATH as
+/// a symlink into the bundle, and `current_exe` on macOS returns the path you
+/// were invoked by — the symlink. Next to `/usr/local/bin/muninn` there is no
+/// shim; next to the real binary there is. Skipping this step is the bug that
+/// made `muninn init` fail for exactly the users who installed the normal way.
+fn shim_near(exe: &Path) -> Option<PathBuf> {
+    let exe = exe.canonicalize().unwrap_or_else(|_| exe.to_path_buf());
     let dir = exe.parent()?;
 
     let candidates = [
@@ -502,6 +513,26 @@ mod tests {
 
     fn block() -> String {
         format!("{BEGIN}\n{POINTER}\n{END}\n")
+    }
+
+    #[test]
+    fn the_shim_is_found_through_the_path_symlink() {
+        // The layout the installer creates: the app's directory holds both
+        // binaries, and a bin directory holds a symlink to `muninn`. Looking
+        // beside the *symlink* finds nothing; the lookup must resolve it.
+        let root = std::env::temp_dir().join(format!("muninn-shim-test-{}", std::process::id()));
+        let app = root.join("app");
+        let bin = root.join("bin");
+        std::fs::create_dir_all(&app).unwrap();
+        std::fs::create_dir_all(&bin).unwrap();
+        std::fs::write(app.join("muninn"), b"").unwrap();
+        std::fs::write(app.join("muninn-forward"), b"").unwrap();
+        std::os::unix::fs::symlink(app.join("muninn"), bin.join("muninn")).unwrap();
+
+        let found = shim_near(&bin.join("muninn")).expect("shim not found via symlink");
+        assert!(found.ends_with("app/muninn-forward"), "got {}", found.display());
+
+        std::fs::remove_dir_all(&root).ok();
     }
 
     #[test]
