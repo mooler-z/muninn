@@ -1,0 +1,16 @@
+[package]
+name = "muninn-forward"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "muninn-forward"
+path = "src/main.rs"
+
+[dependencies]
+# No dependencies, and that is the point — see the note at the top of main.rs.
+# `muninn-core` is linked for its `paths` module only, which is `std`-only by
+# construction, so this binary's dependency tree is genuinely empty.
+muninn-core = { path = "../muninn-core", default-features = false }

@@ -1,0 +1,237 @@
+/* ============ Muninn landing — design tokens ============
+ *
+ * Ported from the Claude Design project file `Muninn Landing.dc.html`, and
+ * deliberately kept in step with the app's own `ui/src/styles/tokens.css`:
+ * every palette value here is the same value the panel uses, so the page and
+ * the product cannot drift apart on colour.
+ *
+ * Each palette value is written exactly once, as `--dark-*` or `--light-*`.
+ * The theme rules below only *map* those onto the `--mn-*` names the
+ * components use.
+ */
+
+:root {
+  /* The wordmark, and nothing else.
+   *
+   * Self-hosted rather than loaded from a font CDN: the page claims no
+   * third-party requests, and a stylesheet fetched from fonts.googleapis.com
+   * would make that untrue on the very first paint. One 16 KB woff2, subset to
+   * latin, for the six letters of a logotype. */
+  --mn-font-display: "Muninn Display", var(--mn-font-serif);
+
+  /* type
+   *
+   * The soft pair. `--font-soft-*` are set on <html> by next/font, which
+   * bundles the files at build time and serves them from this origin — the
+   * system stacks behind them are only for the frame or two before hydration
+   * and for anything that renders this stylesheet without the layout. */
+  --mn-font-ui: var(--font-soft-sans), -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, "Segoe UI", sans-serif;
+  --mn-font-serif: var(--font-soft-serif), ui-serif, "New York", "Iowan Old Style", Palatino, Georgia, serif;
+  --mn-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* shape */
+  --mn-r: 22px;
+  --mn-r-s: 10px;
+  --mn-panel-w: 372px;
+
+  /* One accent, one hue, tuned per theme. */
+  --mn-accent-light: oklch(0.6 0.15 38);
+  --mn-accent-dark: oklch(0.8 0.11 45);
+
+  /* --- dark palette ------------------------------------------------------
+   * Dark leads. It is the app's default and the one the product is
+   * recognisable in. */
+  --dark-page-bg: linear-gradient(180deg, #211316 0%, #1a1013 100%);
+  /* The top stop of the page gradient, flat. The fixed header tints itself
+   * from this — `color-mix` cannot take a gradient, and mixing from
+   * `--dark-surface` (the *panel* colour) is what made the first attempt read
+   * as a mismatched stripe. */
+  --dark-page-top: #211316;
+  --dark-bg: linear-gradient(168deg, #332320 0%, #2c1b20 100%);
+  --dark-surface: #2c1b20;
+  --dark-fg: #f5e7dd;
+  --dark-fg-2: #cbab9d;
+  --dark-fg-3: #9a7d71;
+  --dark-hairline: rgba(245, 231, 221, 0.14);
+  --dark-code-bg: rgba(245, 231, 221, 0.1);
+  --dark-avatar-bg: rgba(255, 235, 220, 0.06);
+  --dark-accent-wash: color-mix(in oklab, var(--mn-accent-dark) 20%, transparent);
+  --dark-selection: rgba(200, 110, 80, 0.35);
+  /* Darker glass holds less light, so the specular carries the edge instead
+   * of the fill. */
+  --dark-glass-tint: rgba(255, 238, 228, 0.1);
+  --dark-glass-rim: rgba(255, 236, 224, 0.22);
+  --dark-glass-spec: rgba(255, 244, 236, 0.5);
+  --dark-glass-shade: rgba(0, 0, 0, 0.38);
+  /* What a raised control casts beneath itself. Built from `--mn-fg` before,
+   * which is near-white on dark — so every glass button was lit from below
+   * rather than sitting above anything. */
+  --dark-drop-soft: rgba(0, 0, 0, 0.3);
+  --dark-drop-deep: rgba(0, 0, 0, 0.45);
+  /* Dichromatic: a cool cast thrown left and a warm one right, over a neutral
+   * drop. The panel reads as sitting in coloured light rather than as a card
+   * with a grey shadow under it. Coloured rather than black: it is lit, not
+   * cut out. */
+  /* On a dark field a light-coloured shadow does not read as depth — it adds
+   * light, and the element glows instead of lifting. So the lift comes from
+   * black here, and the cool-left/warm-right pair stays only as a tint at a
+   * fraction of the light theme's alpha. The dichromatic character survives;
+   * the halo does not. */
+  --dark-shadow:
+    0 0 0 0.5px rgba(255, 200, 170, 0.09),
+    inset 0 1px 0 rgba(255, 225, 205, 0.07),
+    0 10px 24px rgba(0, 0, 0, 0.44),
+    0 2px 7px rgba(0, 0, 0, 0.3),
+    -7px 3px 17px rgba(90, 119, 148, 0.14),
+    7px 4px 18px rgba(192, 64, 119, 0.14);
+  /* Between the resting shadow and the glow. For surfaces large enough that
+   * the full glow becomes a haze around the whole element. */
+  --dark-glow-soft:
+    0 0 0 0.5px rgba(255, 200, 170, 0.11),
+    inset 0 1px 0 rgba(255, 225, 205, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.48),
+    0 2px 7px rgba(0, 0, 0, 0.32),
+    -8px 4px 21px rgba(103, 134, 166, 0.18),
+    8px 5px 24px rgba(198, 72, 125, 0.19);
+  --dark-glow:
+    0 0 0 0.5px rgba(255, 200, 170, 0.14),
+    inset 0 1px 0 rgba(255, 225, 205, 0.1),
+    0 14px 36px rgba(0, 0, 0, 0.5),
+    0 2px 7px rgba(0, 0, 0, 0.34),
+    -10px 5px 26px rgba(116, 150, 185, 0.24),
+    10px 6px 29px rgba(203, 80, 130, 0.26);
+
+  /* --- light palette ----------------------------------------------------- */
+  --light-page-bg: linear-gradient(180deg, #fbf1e8 0%, #f8e6dc 100%);
+  --light-page-top: #fbf1e8;
+  --light-bg: linear-gradient(168deg, #fdefe4 0%, #f6d8ce 100%);
+  --light-surface: #fdefe4;
+  --light-fg: #4a332b;
+  --light-fg-2: #8a6a5d;
+  --light-fg-3: #b08e80;
+  --light-hairline: rgba(130, 80, 58, 0.2);
+  --light-code-bg: rgba(130, 80, 58, 0.1);
+  --light-avatar-bg: rgba(255, 255, 255, 0.4);
+  --light-accent-wash: color-mix(in oklab, var(--mn-accent-light) 15%, transparent);
+  --light-selection: rgba(200, 110, 80, 0.28);
+  --light-glass-tint: rgba(255, 255, 255, 0.5);
+  --light-glass-rim: rgba(255, 255, 255, 0.55);
+  --light-glass-spec: rgba(255, 255, 255, 0.95);
+  --light-glass-shade: rgba(126, 74, 52, 0.16);
+  --light-drop-soft: rgba(74, 51, 43, 0.1);
+  --light-drop-deep: rgba(74, 51, 43, 0.16);
+  --light-shadow:
+    0 0 0 0.5px rgba(150, 88, 60, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 9px 22px rgba(141, 122, 140, 0.3),
+    0 2px 7px rgba(141, 122, 140, 0.12),
+    -7px 3px 16px rgba(90, 119, 148, 0.22),
+    7px 4px 18px rgba(217, 137, 160, 0.28);
+  --light-glow-soft:
+    0 0 0 0.5px rgba(150, 88, 60, 0.21),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 11px 27px rgba(141, 122, 140, 0.34),
+    0 2px 7px rgba(141, 122, 140, 0.13),
+    -8px 4px 20px rgba(103, 134, 166, 0.34),
+    8px 5px 22px rgba(210, 108, 140, 0.4);
+  --light-glow:
+    0 0 0 0.5px rgba(150, 88, 60, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 13px 32px rgba(141, 122, 140, 0.38),
+    0 2px 7px rgba(141, 122, 140, 0.14),
+    -10px 5px 25px rgba(116, 150, 185, 0.5),
+    10px 6px 28px rgba(203, 80, 130, 0.55);
+}
+
+/* --- mapping --------------------------------------------------------------
+ *
+ * Dark is the default, so it is mapped unconditionally and light is the
+ * override — the reverse of the app, where the system is followed from a light
+ * base. A light-preferring visitor still gets light, from the media query.
+ *
+ * The `:not([data-theme])` is load-bearing. A media query adds no specificity,
+ * so `@media { :root }` and `[data-theme="dark"]` score identically and source
+ * order alone would decide the winner — which is exactly the bug that made the
+ * app's theme switcher silently do nothing. Scoping the system rule to "no
+ * override present" removes the tie rather than trying to out-order it.
+ */
+
+:root,
+[data-theme="dark"] {
+  --mn-page-bg: var(--dark-page-bg);
+  --mn-page-top: var(--dark-page-top);
+  --mn-bg: var(--dark-bg);
+  --mn-surface: var(--dark-surface);
+  --mn-fg: var(--dark-fg);
+  --mn-fg-2: var(--dark-fg-2);
+  --mn-fg-3: var(--dark-fg-3);
+  --mn-hairline: var(--dark-hairline);
+  --mn-code-bg: var(--dark-code-bg);
+  --mn-avatar-bg: var(--dark-avatar-bg);
+  --mn-accent: var(--mn-accent-dark);
+  --mn-accent-wash: var(--dark-accent-wash);
+  --mn-selection: var(--dark-selection);
+  --mn-glass-tint: var(--dark-glass-tint);
+  --mn-glass-rim: var(--dark-glass-rim);
+  --mn-glass-spec: var(--dark-glass-spec);
+  --mn-glass-shade: var(--dark-glass-shade);
+  --mn-drop-soft: var(--dark-drop-soft);
+  --mn-drop-deep: var(--dark-drop-deep);
+  --mn-shadow: var(--dark-shadow);
+  --mn-glow-soft: var(--dark-glow-soft);
+  --mn-glow: var(--dark-glow);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --mn-page-bg: var(--light-page-bg);
+    --mn-page-top: var(--light-page-top);
+    --mn-bg: var(--light-bg);
+    --mn-surface: var(--light-surface);
+    --mn-fg: var(--light-fg);
+    --mn-fg-2: var(--light-fg-2);
+    --mn-fg-3: var(--light-fg-3);
+    --mn-hairline: var(--light-hairline);
+    --mn-code-bg: var(--light-code-bg);
+    --mn-avatar-bg: var(--light-avatar-bg);
+    --mn-accent: var(--mn-accent-light);
+    --mn-accent-wash: var(--light-accent-wash);
+    --mn-selection: var(--light-selection);
+    --mn-glass-tint: var(--light-glass-tint);
+    --mn-glass-rim: var(--light-glass-rim);
+    --mn-glass-spec: var(--light-glass-spec);
+    --mn-glass-shade: var(--light-glass-shade);
+    --mn-drop-soft: var(--light-drop-soft);
+    --mn-drop-deep: var(--light-drop-deep);
+  --mn-drop-soft: var(--light-drop-soft);
+  --mn-drop-deep: var(--light-drop-deep);
+    --mn-shadow: var(--light-shadow);
+    --mn-glow-soft: var(--light-glow-soft);
+    --mn-glow: var(--light-glow);
+  }
+}
+
+[data-theme="light"] {
+  --mn-page-bg: var(--light-page-bg);
+  --mn-page-top: var(--light-page-top);
+  --mn-bg: var(--light-bg);
+  --mn-surface: var(--light-surface);
+  --mn-fg: var(--light-fg);
+  --mn-fg-2: var(--light-fg-2);
+  --mn-fg-3: var(--light-fg-3);
+  --mn-hairline: var(--light-hairline);
+  --mn-code-bg: var(--light-code-bg);
+  --mn-avatar-bg: var(--light-avatar-bg);
+  --mn-accent: var(--mn-accent-light);
+  --mn-accent-wash: var(--light-accent-wash);
+  --mn-selection: var(--light-selection);
+  --mn-glass-tint: var(--light-glass-tint);
+  --mn-glass-rim: var(--light-glass-rim);
+  --mn-glass-spec: var(--light-glass-spec);
+  --mn-glass-shade: var(--light-glass-shade);
+  --mn-drop-soft: var(--light-drop-soft);
+  --mn-drop-deep: var(--light-drop-deep);
+  --mn-shadow: var(--light-shadow);
+  --mn-glow-soft: var(--light-glow-soft);
+  --mn-glow: var(--light-glow);
+}

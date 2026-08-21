@@ -1,0 +1,458 @@
+/* ============ Muninn admin ============
+ *
+ * The dashboard the landing page promises does not exist for users — this one
+ * is for whoever runs the site, and it inherits the same tokens so it does not
+ * feel like a different product.
+ *
+ * The accent rule still applies: it marks the one number that means something
+ * changed, not every heading.
+ */
+
+.ad-shell {
+  min-height: 100vh;
+  background: var(--mn-page-bg);
+  background-attachment: fixed;
+  color: var(--mn-fg);
+}
+
+.ad-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 32px 96px;
+}
+
+.ad-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 26px 0 0;
+}
+
+.ad-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--mn-fg);
+}
+
+/* The same wordmark as the site — the admin is the same product. */
+.ad-title strong {
+  font: 400 22px/1 var(--mn-font-display);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.ad-title span {
+  font: 400 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.ad-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Range picker. The chosen one is the only thing on the page wearing ink. */
+.ad-range {
+  display: flex;
+  gap: 6px;
+}
+
+.ad-range a {
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--mn-hairline);
+  font: 500 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+  text-decoration: none;
+}
+
+.ad-range a:hover {
+  color: var(--mn-fg-2);
+  text-decoration: none;
+}
+
+.ad-range a[aria-current="true"] {
+  color: var(--mn-fg);
+  border-color: color-mix(in oklab, var(--mn-accent) 45%, transparent);
+  background: var(--mn-accent-wash);
+}
+
+.ad-logout {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font: 500 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-2);
+}
+
+/* --- the four headline figures -------------------------------------------- */
+
+.ad-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-top: 40px;
+}
+
+.ad-total {
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  box-shadow: var(--mn-shadow);
+  padding: 22px 24px;
+}
+
+.ad-total-label {
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+/* Tabular figures, so a column of numbers does not jitter as it updates. And
+ * no counting-up animation — the number is the number. */
+.ad-total-value {
+  display: block;
+  margin-top: 12px;
+  font: 300 34px/1 var(--mn-font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.ad-total-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--mn-fg-3);
+}
+
+/* --- the chart ------------------------------------------------------------
+ *
+ * Bars in plain CSS rather than a charting library. Thirty numbers do not
+ * justify a dependency, and this way the chart is themed by the same tokens as
+ * everything else instead of being configured to match.
+ */
+
+.ad-panel {
+  margin-top: 26px;
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  box-shadow: var(--mn-shadow);
+  padding: 24px 26px 20px;
+}
+
+.ad-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.ad-panel-head h2 {
+  margin: 0;
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.ad-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--mn-fg-3);
+}
+
+.ad-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ad-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.ad-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 180px;
+  overflow-x: auto;
+}
+
+.ad-col {
+  flex: 1;
+  min-width: 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  position: relative;
+}
+
+.ad-col-views {
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in oklab, var(--mn-fg) 26%, transparent);
+  /* A day with traffic must never render as nothing at all. */
+  min-height: 2px;
+}
+
+.ad-col-downloads {
+  border-radius: 3px 3px 0 0;
+  background: var(--mn-accent);
+}
+
+/* Native tooltip: exact figures on demand, nothing hovering over the layout. */
+.ad-col::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.ad-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font: 400 10px/1 var(--mn-font-mono);
+  color: var(--mn-fg-3);
+}
+
+/* --- breakdown tables ----------------------------------------------------- */
+
+.ad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 26px;
+  margin-top: 26px;
+}
+
+.ad-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ad-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* The bar is the background of the row, not a separate element beside it —
+ * so the label always sits on top of its own magnitude. */
+.ad-row-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in oklab, var(--mn-fg) 8%, transparent);
+  border-radius: 8px;
+}
+
+.ad-row-label,
+.ad-row-count {
+  position: relative;
+  z-index: 1;
+}
+
+.ad-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--mn-fg-2);
+}
+
+.ad-row-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--mn-fg);
+  font-size: 12px;
+}
+
+.ad-empty {
+  padding: 14px 0;
+  font-size: 13px;
+  color: var(--mn-fg-3);
+}
+
+/* --- recent downloads ----------------------------------------------------- */
+
+.ad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ad-table th {
+  text-align: left;
+  padding: 0 12px 10px 0;
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+  border-bottom: 1px solid var(--mn-hairline);
+}
+
+.ad-table td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--mn-hairline);
+  color: var(--mn-fg-2);
+}
+
+.ad-table td:first-child {
+  font-family: var(--mn-font-mono);
+  font-size: 12px;
+  color: var(--mn-fg-3);
+  white-space: nowrap;
+}
+
+.ad-note {
+  margin-top: 34px;
+  padding-top: 20px;
+  border-top: 1px solid var(--mn-hairline);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-3);
+  max-width: 74ch;
+}
+
+/* --- login ---------------------------------------------------------------- */
+
+.ad-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--mn-page-bg);
+  color: var(--mn-fg);
+}
+
+.ad-login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  box-shadow: var(--mn-shadow);
+  padding: 30px 30px 26px;
+}
+
+.ad-login-card h1 {
+  margin: 16px 0 0;
+  font: 400 24px/1.2 var(--mn-font-serif);
+}
+
+.ad-login-card p {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--mn-fg-2);
+}
+
+.ad-field {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ad-field label {
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+/*
+ * A field you can actually see.
+ *
+ * This was `--mn-code-bg` on `--mn-hairline`: a 10%-opacity fill inside a
+ * 14%-opacity border. Against the card those are nearly the same value as the
+ * card itself, so the control rendered as an unmarked gap under the label and
+ * read as a missing input rather than an empty one. A form's one field has to
+ * announce itself.
+ *
+ * So: a sunken well — darker than the card it sits in, with a border at real
+ * contrast and an inset shadow to seat it.
+ */
+.ad-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 13px 15px;
+  border-radius: var(--mn-r-s);
+  border: 1px solid color-mix(in oklab, var(--mn-fg) 30%, transparent);
+  background: color-mix(in oklab, var(--mn-page-top) 70%, transparent);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.22);
+  color: var(--mn-fg);
+  font: 400 15px/1.2 var(--mn-font-ui);
+  letter-spacing: 0.04em;
+  transition:
+    border-color 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+
+.ad-field input::placeholder {
+  color: var(--mn-fg-3);
+  letter-spacing: 0.02em;
+}
+
+/* `outline: none` on its own left focus invisible too. The ring replaces it
+ * rather than merely removing it. */
+.ad-field input:focus {
+  outline: none;
+  border-color: var(--mn-accent);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.22),
+    0 0 0 3px color-mix(in oklab, var(--mn-accent) 26%, transparent);
+}
+
+.ad-field input[aria-invalid="true"] {
+  border-color: var(--mn-accent);
+}
+
+.ad-submit {
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 18px;
+  border-radius: 12px;
+  font: 600 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--mn-accent);
+}
+
+@media (max-width: 640px) {
+  .ad-wrap {
+    padding: 0 18px 64px;
+  }
+
+  .ad-panel {
+    padding: 20px 18px 16px;
+  }
+}

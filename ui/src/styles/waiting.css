@@ -1,0 +1,490 @@
+/* ============ The waiting window ============
+ *
+ * Company during a wait, not a different application — the same surface, the
+ * same glass controls, the same restraint. Nothing here reports progress:
+ * Muninn does not know how far along the agent is, and a bar that guessed
+ * would be a lie.
+ */
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: transparent;
+  color: var(--mn-fg);
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px 18px 18px;
+  background: var(--mn-bg);
+  border: var(--mn-border);
+  border-radius: 18px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+/* --- bar ------------------------------------------------------------------ */
+
+.wt-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-left: 8px;
+  -webkit-app-region: drag;
+}
+
+.wt-bar button {
+  -webkit-app-region: no-drag;
+}
+
+.wt-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wt-title {
+  font: 500 11.5px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  color: var(--mn-fg);
+}
+
+.wt-hint {
+  font: 400 var(--mn-fs-note) / 1.3 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+.wt-hud {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* Readouts, not controls — flat, so they do not compete with the glass. */
+.wt-pill {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--mn-hairline);
+  background: color-mix(in oklab, var(--mn-fg-3) 8%, transparent);
+}
+
+.wt-key {
+  font: 400 9px/1 var(--mn-font-ui);
+  letter-spacing: 0.2em;
+  color: var(--mn-fg-3);
+}
+
+.wt-value {
+  font: 600 13px/1 var(--mn-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--mn-fg);
+}
+
+/* --- stage ---------------------------------------------------------------- */
+
+/* The stage takes the world's own proportions, so the canvas fills it exactly
+ * and there is nothing behind it to show through.
+ *
+ * The world's shape was chosen to match this box rather than the other way
+ * round — at 980×320 it was far wider than the window and sat as a band with
+ * dead space above and below. */
+.wt-stage {
+  position: relative;
+  align-self: center;
+  /* Fill whichever axis runs out first, so the game is as large as the window
+   * allows in both directions. */
+  width: 100%;
+  height: 100%;
+  max-width: calc((100vh - 116px) * (700 / 340));
+  max-height: 100%;
+  aspect-ratio: 700 / 340;
+  border-radius: 14px;
+  border: 1px solid var(--mn-hairline);
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+
+.wt-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* --- overlay -------------------------------------------------------------- */
+
+.wt-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  /* A light veil. At blur(8px) over a full-bleed game the whole stage turned
+   * to soup and the card floated in it; the point is to step the game back,
+   * not to erase it. */
+  background: color-mix(in oklab, var(--mn-bg) 62%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.wt-overlay[hidden] {
+  display: none;
+}
+
+.wt-card {
+  width: min(420px, 92%);
+  padding: 20px 22px;
+  border-radius: 16px;
+  border: 1px solid var(--mn-hairline);
+  background: var(--mn-bg);
+  /* A plain shadow, not the panel's dichromatic one. That shadow throws blue
+   * left and pink right, which at this size read as a coloured fringe around
+   * the card rather than as depth. */
+  box-shadow: 0 12px 34px color-mix(in oklab, var(--mn-fg) 26%, transparent);
+  text-align: center;
+}
+
+.wt-ov-title {
+  margin: 0 0 8px;
+  font: 300 22px/1.3 var(--mn-font-voice);
+  color: var(--mn-fg);
+}
+
+.wt-ov-text {
+  margin: 0 0 16px;
+  font: 400 var(--mn-fs-body) / 1.55 var(--mn-font-voice);
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.wt-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* --- disperse ------------------------------------------------------------- */
+
+/*
+ * The one control in the HUD, so unlike the readouts beside it this one is
+ * glass — it is meant to look like something you can take hold of.
+ */
+.wt-spread {
+  align-items: center;
+  cursor: ew-resize;
+}
+
+.wt-spread input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 84px;
+  height: 3px;
+  margin: 0;
+  border-radius: 999px;
+  /* Muted, not the full accent. At the top of its range this filled most of
+   * the pill with a solid orange bar, which read as a warning rather than as a
+   * setting — and the accent means "you are needed" everywhere else in the
+   * product. */
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--mn-accent) 62%, transparent) 0 var(--wt-spread, 0%),
+    color-mix(in oklab, var(--mn-fg-3) 24%, transparent) var(--wt-spread, 0%) 100%
+  );
+  cursor: ew-resize;
+}
+
+.wt-spread input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--mn-accent) 55%, var(--mn-hairline));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, white 55%, transparent),
+      transparent 62%
+    ),
+    var(--mn-glass-fill, var(--mn-bg));
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.28),
+    inset 0 -1px 1px color-mix(in oklab, var(--mn-fg) 12%, transparent);
+}
+
+.wt-spread input:focus-visible {
+  outline: none;
+}
+
+.wt-spread input:focus-visible::-webkit-slider-thumb {
+  border-color: var(--mn-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--mn-accent) 28%, transparent);
+}
+
+/* --- pull back ------------------------------------------------------------
+ *
+ * The maze's one control. Styled as a readout that lights rather than as a
+ * button, because it is a state you are in, not an action you fire.
+ */
+.wt-look {
+  cursor: pointer;
+  border: 1px solid var(--mn-hairline);
+  background: color-mix(in oklab, var(--mn-fg-3) 8%, transparent);
+  color: var(--mn-fg-2);
+  font: 600 11px/1 var(--mn-font-mono);
+  letter-spacing: 0.08em;
+  transition:
+    background 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.wt-look:hover {
+  color: var(--mn-fg);
+}
+
+.wt-look.is-on {
+  color: var(--mn-fg);
+  border-color: color-mix(in oklab, var(--mn-accent) 55%, transparent);
+  background: var(--mn-accent-wash);
+}
+
+/* --- the games picker ------------------------------------------------------
+ *
+ * Switching games without going to the menu bar. The sheet covers the stage
+ * rather than the window, so the header stays put and it is clear you are
+ * still inside the same window rather than somewhere new.
+ */
+
+.wt-games {
+  cursor: pointer;
+  border: 1px solid var(--mn-hairline);
+  background: color-mix(in oklab, var(--mn-fg-3) 8%, transparent);
+  color: var(--mn-fg-2);
+  font: 600 11px/1 var(--mn-font-mono);
+  letter-spacing: 0.08em;
+  transition:
+    background 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.wt-games:hover {
+  color: var(--mn-fg);
+  border-color: color-mix(in oklab, var(--mn-accent) 45%, transparent);
+}
+
+.wt-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 14px;
+  background: color-mix(in oklab, var(--mn-surface) 55%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.wt-sheet[hidden] {
+  display: none;
+}
+
+.wt-picker {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--mn-r);
+  background: var(--mn-bg);
+  border: var(--mn-border);
+  box-shadow: var(--mn-shadow);
+  /* Opens from the button it hangs off, like a menu rather than a dialogue. */
+  transform-origin: 100% 0;
+  animation: wt-picker-in 220ms cubic-bezier(0.22, 1.12, 0.36, 1) both;
+}
+
+@keyframes wt-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wt-picker-title {
+  padding: 4px 8px 8px;
+}
+
+.wt-game {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--mn-r-s);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.wt-game:hover {
+  background: color-mix(in oklab, var(--mn-fg-3) 10%, transparent);
+}
+
+/* The one you are already playing: marked, and it does nothing when pressed. */
+.wt-game.is-current {
+  border-color: color-mix(in oklab, var(--mn-accent) 45%, transparent);
+  background: var(--mn-accent-wash);
+  cursor: default;
+}
+
+.wt-game-name {
+  font: 500 13px/1.2 var(--mn-font-ui);
+  color: var(--mn-fg);
+}
+
+.wt-game-note {
+  font: 400 11.5px/1.35 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+/* --- header, rearranged ---------------------------------------------------
+ *
+ * Three zones, left to right: what the game is, what it is saying, and what
+ * the window can do. Mixing the third with the first two is what made this
+ * unreadable — a slider for engine strength sat next to the button that ends
+ * the session.
+ */
+
+.wt-readouts {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  margin-right: 14px;
+}
+
+/* Window chrome: the same quiet treatment for all of them, so none of them
+ * competes with the game. */
+.wt-chrome {
+  cursor: pointer;
+  border: 1px solid var(--mn-hairline);
+  background: color-mix(in oklab, var(--mn-fg-3) 8%, transparent);
+  color: var(--mn-fg-2);
+  font: 600 11px/1 var(--mn-font-mono);
+  letter-spacing: 0.08em;
+  transition:
+    background 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.wt-chrome:hover {
+  color: var(--mn-fg);
+  border-color: color-mix(in oklab, var(--mn-accent) 45%, transparent);
+}
+
+/* --- the game's own controls ----------------------------------------------
+ *
+ * Along the bottom of the stage, centred: near the thing they act on rather
+ * than in the corner you go to when you are finished. Floating over the game
+ * rather than taking a row from it, because every game here wants its full
+ * height.
+ */
+
+.wt-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Empty for the raven and the runner, and an empty bar should not draw a
+   * shadow onto the game. */
+  pointer-events: none;
+}
+
+.wt-controls:empty {
+  display: none;
+}
+
+.wt-controls > * {
+  pointer-events: auto;
+  /* Lifted off the game so a pale sky or a lit corridor cannot swallow it. */
+  background: color-mix(in oklab, var(--mn-surface) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px -6px var(--mn-drop-deep);
+}
+
+/* --- the controls sheet ---------------------------------------------------- */
+
+.wt-key-row {
+  display: grid;
+  grid-template-columns: minmax(88px, auto) 1fr;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+
+.wt-key-row:nth-child(odd) {
+  background: color-mix(in oklab, var(--mn-fg-3) 6%, transparent);
+}
+
+.wt-kbd {
+  font: 500 11px/1.4 var(--mn-font-mono);
+  letter-spacing: 0.04em;
+  color: var(--mn-fg);
+  text-align: right;
+}
+
+.wt-key-what {
+  font: 400 12.5px/1.4 var(--mn-font-ui);
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* Start over. Quieter than the game's own controls — it is the one thing here
+ * that throws work away, and it should not be the easiest thing to hit. */
+.wt-fresh {
+  cursor: pointer;
+  border: 1px solid var(--mn-hairline);
+  color: var(--mn-fg-3);
+  font: 600 11px/1 var(--mn-font-mono);
+  transition:
+    color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.wt-fresh:hover {
+  color: var(--mn-fg-2);
+  border-color: color-mix(in oklab, var(--mn-fg-3) 45%, transparent);
+}

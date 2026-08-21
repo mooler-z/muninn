@@ -1,0 +1,836 @@
+/* ============ The panel ============
+ *
+ * The design canvas sets everything inline because that is what a canvas does.
+ * This is the same design as classes.
+ *
+ * The one structural idea worth reading before changing anything here is the
+ * two registers:
+ *
+ *   .mn-voice  the agent talking. Light sentence type, and quoted wherever it
+ *              names a check it claims to have run.
+ *   .mn-fact   something Muninn knows first-hand — project, branch, source,
+ *              time, the status word. Tracked capitals.
+ *
+ * "Tests pass" reported by the agent and "tests pass" observed by Muninn are
+ * not the same statement and must not look alike (design principle §5). Making
+ * that a pair of classes rather than a per-element decision is what stops it
+ * eroding: a new field has to pick a register, and picking wrong is visible.
+ *
+ * The unquoted-tracked slot — a fact Muninn verified itself — is reserved and
+ * currently unused. Muninn checks nothing today.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  /* Design principle §4: the panel is glanced at, not selected from, and a
+   * stray drag must not start moving text around. */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+body {
+  font-family: var(--mn-font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- the window ----------------------------------------------------------- */
+
+.mn-window {
+  padding: var(--mn-shadow-pad-top) var(--mn-shadow-pad) var(--mn-shadow-pad);
+  width: calc(var(--mn-panel-w) + var(--mn-shadow-pad) * 2);
+}
+
+.mn-panel {
+  position: relative;
+  width: var(--mn-panel-w);
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  border: var(--mn-border);
+  box-shadow: var(--mn-shadow);
+  padding: 18px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  color: var(--mn-fg);
+  /* Dragging the panel moves the window, the way a titlebar would. There is no
+   * titlebar because this is not that kind of window. */
+  -webkit-app-region: drag;
+}
+
+.mn-panel a,
+.mn-panel button {
+  -webkit-app-region: no-drag;
+}
+
+/* A hover the app worked out for us. The panel is never the key window, so
+ * `:hover` alone would only start matching once it had been clicked — see
+ * applyHover() in panel.ts and hover.rs. */
+
+/* --- registers ------------------------------------------------------------ */
+
+.mn-voice {
+  font-family: var(--mn-font-voice);
+  text-wrap: pretty;
+}
+
+.mn-fact {
+  font-family: var(--mn-font-ui);
+  text-transform: uppercase;
+}
+
+/* A claim is quoted by the stylesheet, not by the template, so a field can
+ * never be rendered as a claim and lose its quotation marks by accident. */
+.mn-claim::before {
+  content: "\201C";
+}
+.mn-claim::after {
+  content: "\201D";
+}
+
+/* --- header --------------------------------------------------------------- */
+
+.mn-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+/* The mark stands on its own. It was in a bordered circle when it was a letter
+ * — an initial needs something to sit in — but a drawing does not, and the ring
+ * only competed with the countdown ring at the other end of the panel. */
+.mn-avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mn-fg-2);
+}
+
+/* The artwork is a black silhouette, so it is used as a mask and painted with
+ * `currentColor` — otherwise it would disappear against the dark theme. The
+ * aspect ratio is the artwork's own, so the box matches the drawing. */
+.mn-logo {
+  display: block;
+  height: 34px;
+  aspect-ratio: 139 / 186;
+  background: currentColor;
+  -webkit-mask-image: url("../../../assets/muninn-raven.png");
+  mask-image: url("../../../assets/muninn-raven.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.mn-head-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mn-project {
+  font: 500 11.5px/1.2 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  color: var(--mn-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mn-branch {
+  font: 400 10px/1.3 var(--mn-font-mono);
+  color: var(--mn-fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mn-head-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.mn-source {
+  font: 400 9.5px/1.3 var(--mn-font-ui);
+  letter-spacing: 0.14em;
+  color: var(--mn-fg-3);
+}
+
+.mn-time {
+  font: 400 var(--mn-fs-meta) / 1.3 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+/* --- status --------------------------------------------------------------- */
+
+.mn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mn-fg-2);
+}
+
+.mn-status svg {
+  flex: none;
+}
+
+.mn-status-word {
+  font: 500 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.3em;
+}
+
+/* Colour means you are needed. Finishing is the expected outcome and earns no
+ * colour; the accent appears only where the user is the blocker — and never
+ * alone, always beside the icon and the word. */
+.mn-status--needed {
+  color: var(--mn-accent);
+}
+
+.mn-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* "as written" — the raw-fallback flag. Quiet on purpose: an agent that writes
+ * prose instead of a block is not broken. */
+.mn-asis {
+  font: 400 9.5px/1 var(--mn-font-ui);
+  letter-spacing: 0.2em;
+  color: var(--mn-fg-3);
+  white-space: nowrap;
+}
+
+/* --- body ----------------------------------------------------------------- */
+
+.mn-headline {
+  margin: 0;
+  font: 300 var(--mn-fs-lead) / var(--mn-lh-lead) var(--mn-font-voice);
+  color: var(--mn-fg);
+  text-wrap: pretty;
+}
+
+.mn-headline--muted {
+  font-size: 16px;
+  color: var(--mn-fg-2);
+}
+
+.mn-rule {
+  height: 1px;
+  background: var(--mn-hairline);
+}
+
+.mn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mn-field--list {
+  gap: 6px;
+}
+
+.mn-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 var(--mn-fs-label) / 1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+/* Phosphor glyphs sit at the label's own weight and colour — they mark the
+ * field, they do not announce it. The tracked capitals are still doing the
+ * work; the glyph is what lets the eye find the row it wants without reading. */
+.mn-glyph {
+  flex: none;
+  opacity: 0.85;
+}
+
+.mn-value {
+  margin: 0;
+  font: 400 var(--mn-fs-body) / var(--mn-lh-body) var(--mn-font-voice);
+  color: var(--mn-fg);
+  text-wrap: pretty;
+}
+
+.mn-value--secondary {
+  color: var(--mn-fg-2);
+}
+
+.mn-changed {
+  margin: 0;
+  font-size: var(--mn-fs-note);
+  line-height: var(--mn-lh-body);
+  color: var(--mn-fg-2);
+}
+
+.mn-path {
+  font: 400 var(--mn-fs-mono) / 1.5 var(--mn-font-mono);
+  color: var(--mn-fg);
+  word-break: break-all;
+}
+
+.mn-action {
+  font: 500 var(--mn-fs-meta) / 1 var(--mn-font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mn-accent);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mn-action:hover,
+.mn-action.is-hover {
+  text-decoration: underline;
+}
+
+/* --- raw fallback --------------------------------------------------------- */
+
+/* The agent's prose, rendered as markdown. Same chrome as everything else: an
+ * unstructured turn is not second-class. */
+.mn-raw {
+  font: 400 var(--mn-fs-body) / var(--mn-lh-body) var(--mn-font-voice);
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mn-raw > :first-child {
+  margin-top: 0;
+}
+
+.mn-raw > :last-child {
+  margin-bottom: 0;
+}
+
+/* The first paragraph takes the headline type — the outcome still has to lead. */
+.mn-raw > p:first-child {
+  font: 300 var(--mn-fs-lead) / var(--mn-lh-lead) var(--mn-font-voice);
+  color: var(--mn-fg);
+}
+
+.mn-raw p {
+  margin: 0 0 10px;
+}
+
+.mn-raw h1,
+.mn-raw h2,
+.mn-raw h3,
+.mn-raw h4 {
+  margin: 14px 0 6px;
+  font: 500 var(--mn-fs-body) / 1.35 var(--mn-font-ui);
+  color: var(--mn-fg);
+}
+
+.mn-raw ul,
+.mn-raw ol {
+  margin: 0 0 10px;
+  padding-left: 18px;
+}
+
+.mn-raw li {
+  margin-bottom: 3px;
+}
+
+.mn-raw code {
+  font: 400 var(--mn-fs-mono) / 1 var(--mn-font-mono);
+  color: var(--mn-fg);
+  background: var(--mn-code-bg);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.mn-raw pre {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  background: var(--mn-code-bg);
+  border-radius: var(--mn-r-s);
+  overflow-x: auto;
+}
+
+.mn-raw pre code {
+  background: none;
+  padding: 0;
+  line-height: 1.5;
+}
+
+.mn-raw a {
+  color: var(--mn-accent);
+}
+
+.mn-raw blockquote {
+  margin: 0 0 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--mn-hairline);
+  color: var(--mn-fg-3);
+}
+
+.mn-raw table {
+  border-collapse: collapse;
+  font-size: var(--mn-fs-note);
+  margin-bottom: 10px;
+}
+
+.mn-raw th,
+.mn-raw td {
+  border-bottom: 1px solid var(--mn-hairline);
+  padding: 3px 8px 3px 0;
+  text-align: left;
+}
+
+/* Long summaries scroll inside the panel rather than growing off-screen. The
+ * first screen still has to carry the outcome — design principle §2. */
+.mn-scroll {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  /* Design principle §6: nothing here should look like it is doing something. */
+  scrollbar-width: thin;
+}
+
+/* --- footer --------------------------------------------------------------- */
+
+/* Two actions on the left, the dismiss control on the right. */
+.mn-foot-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mn-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+
+
+
+/* --- the dismiss control -------------------------------------------------
+ *
+ * A ring that empties as the panel's time runs out, wrapped around the button
+ * that closes it now. The ring is the only moving thing on a resting panel, so
+ * see the note in ui/src/panel.ts about the tension with design principle §4.
+ */
+
+.mn-dismiss {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mn-dismiss-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--mn-accent);
+  pointer-events: none;
+}
+
+/* --- the ring, in layers -------------------------------------------------
+ *
+ * Depth comes from stacking rather than from a filter: a groove for the ring to
+ * sit in, a shadow cast down into it, the gradient body lit from the top left,
+ * and a fine gloss along that lit edge. All three arcs advance together — see
+ * RING_ARC in render.ts.
+ */
+
+.mn-ring-arc {
+  /* No transition: the countdown is driven per frame from elapsed time in
+   * panel.ts, so the ring is already smooth — and a transition here would
+   * fight every pause by animating towards a target that no longer applies. */
+  transition: none;
+}
+
+/* The groove. Darker than the panel and inset, so the ring reads as sitting
+ * *in* something. */
+.mn-dismiss-ring .mn-ring-track {
+  stroke: color-mix(in oklab, var(--mn-accent) 16%, transparent);
+  filter: drop-shadow(0 1px 0.5px var(--mn-raise-top));
+}
+
+/* Cast down and to the right, blurred, under the body. Tinted with the panel's
+ * own foreground rather than pure black, which on a warm surface reads as dirt
+ * rather than as shadow. */
+.mn-dismiss-ring .mn-ring-cast {
+  color: color-mix(in oklab, var(--mn-pink) 55%, var(--mn-fg));
+  opacity: 0.4;
+  transform-origin: center;
+  translate: 0.6px 1.4px;
+  filter: blur(1.2px);
+}
+
+.mn-dismiss-ring .mn-ring-gloss {
+  translate: -0.35px -0.55px;
+}
+
+/* The gradient carries the depth, so it stays within a narrow band around the
+ * base hue. Wide light/dark swings would give the ring a chrome look, which is
+ * a long way from the rest of this panel. */
+.mn-ring-stop-a {
+  stop-color: color-mix(in oklab, var(--mn-pink) 66%, white);
+}
+
+.mn-ring-stop-b {
+  stop-color: var(--mn-pink);
+}
+
+.mn-ring-stop-c {
+  stop-color: color-mix(in oklab, var(--mn-pink) 72%, var(--mn-fg));
+}
+
+.mn-ring-gloss-a {
+  stop-color: rgba(255, 255, 255, 0.5);
+}
+
+.mn-ring-gloss-b {
+  stop-color: rgba(255, 255, 255, 0);
+}
+
+/* The button sits inside the ring and stays out of its way.
+ *
+ * A solid fill here was far too loud — a saturated disc on a pale blush panel
+ * pulls the eye straight to the one control the user mostly does not need. The
+ * ring is the coloured element; the button is a soft wash of the same hue with
+ * the panel's own ink for the glyph, so it reads as part of the surface and
+ * only steps forward under the pointer. */
+/* --- liquid glass ---------------------------------------------------------
+ *
+ * A material, not a colour. Three things together make it read as glass rather
+ * than as a translucent rectangle:
+ *
+ *   the fill      a faint tint over a blurred, saturated backdrop, so what is
+ *                 behind it shows through softened rather than hidden
+ *   the rim       a hairline that is bright where it faces the light and fades
+ *                 round the far side — drawn as a gradient border, since a flat
+ *                 border colour is the thing that makes glass look like plastic
+ *   the depth     a specular line just inside the top edge, and a shade
+ *                 gathering along the bottom, so the surface has thickness
+ *
+ * On press it compresses: the specular goes, the shade moves inward, and the
+ * whole thing sinks a pixel — light behaving as if the glass were pushed in.
+ */
+
+.mn-glass {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  background:
+    linear-gradient(
+      180deg,
+      var(--mn-glass-tint) 0%,
+      color-mix(in oklab, var(--mn-glass-tint) 46%, transparent) 52%,
+      color-mix(in oklab, var(--mn-glass-tint) 78%, transparent) 100%
+    );
+  /* No backdrop-filter, deliberately.
+   *
+   * It shimmered: the panel breathes on a loop, so it repaints continuously,
+   * and every repaint made the blur re-sample its backdrop — worst on the close
+   * button, which also sits inside a ring animating every frame.
+   *
+   * Little is lost. Backdrop blur earns its keep over busy content; here the
+   * backdrop is the panel's own smooth gradient, which has no detail to refract.
+   * What actually reads as glass is the gradient rim, the specular edge and the
+   * depth below — and those cost nothing per frame.
+   */
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    inset 0 -7px 12px -9px var(--mn-glass-shade),
+    0 1px 1.5px color-mix(in oklab, var(--mn-fg) 10%, transparent),
+    0 6px 14px -7px color-mix(in oklab, var(--mn-fg) 16%, transparent);
+  transition:
+    background 160ms ease-out,
+    box-shadow 160ms ease-out,
+    color 140ms ease-out,
+    transform 70ms ease-out;
+}
+
+/* The rim. A gradient ring rather than a border colour — masked so only the
+ * one-pixel edge of the gradient survives. */
+.mn-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    155deg,
+    var(--mn-glass-spec) 0%,
+    var(--mn-glass-rim) 34%,
+    color-mix(in oklab, var(--mn-glass-rim) 25%, transparent) 62%,
+    var(--mn-glass-rim) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.mn-glass:hover,
+.mn-glass.is-hover {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--mn-glass-tint) 125%, white) 0%,
+      color-mix(in oklab, var(--mn-glass-tint) 68%, transparent) 52%,
+      color-mix(in oklab, var(--mn-glass-tint) 95%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    inset 0 -7px 12px -9px var(--mn-glass-shade),
+    0 2px 3px color-mix(in oklab, var(--mn-fg) 12%, transparent),
+    0 10px 20px -8px color-mix(in oklab, var(--mn-fg) 20%, transparent);
+}
+
+.mn-glass:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    inset 0 2px 5px -1px var(--mn-glass-shade),
+    inset 0 1px 0 color-mix(in oklab, var(--mn-glass-spec) 30%, transparent),
+    0 1px 1px color-mix(in oklab, var(--mn-fg) 10%, transparent);
+}
+
+/* --- the one button shape ------------------------------------------------
+ *
+ * Both footer controls are this: a round button carrying a single mark. The
+ * close button is the loud one because a timer runs against it; Details is the
+ * same shape held quieter.
+ */
+.mn-round {
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  color: var(--mn-fg-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* The Details button. Geometry and type; the glass supplies the surface. */
+.mn-details {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 11px;
+  border-radius: 11px;
+  font: 600 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-2);
+  cursor: pointer;
+}
+
+.mn-details:hover,
+.mn-details.is-hover,
+.mn-round:hover,
+.mn-round.is-hover {
+  color: var(--mn-fg);
+}
+
+.mn-details .mn-glyph {
+  width: 14px;
+  height: 14px;
+  opacity: 0.75;
+}
+
+.mn-details:hover .mn-glyph,
+.mn-details.is-hover .mn-glyph {
+  opacity: 1;
+}
+
+
+/* The control itself. The details window uses this bare; the panel adds the
+ * rule below via the modifier. */
+.mn-pager {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* In the panel it sits between the header and the summary, so its position does
+ * not depend on how much the agent wrote — see the note on pager() in
+ * render.ts. */
+.mn-pager--ruled {
+  justify-content: flex-end;
+  padding-bottom: 11px;
+  margin-bottom: -2px;
+  border-bottom: 1px solid var(--mn-hairline);
+}
+
+/* Geometry only; .mn-glass supplies the surface, as on the other controls. */
+.mn-step {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mn-fg-2);
+  cursor: pointer;
+}
+
+/* At the ends of the queue the glass goes flat: no rim, no specular, nothing
+ * to press. */
+.mn-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+  box-shadow: none;
+}
+
+.mn-step:disabled::before {
+  opacity: 0.3;
+}
+
+.mn-count {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.mn-count-now {
+  font: 300 19px/1 var(--mn-font-ui);
+  color: var(--mn-fg);
+}
+
+.mn-count-total {
+  font: 400 var(--mn-fs-label) / 1 var(--mn-font-ui);
+  letter-spacing: 0.12em;
+  color: var(--mn-fg-3);
+}
+
+/* --- the summary arriving ------------------------------------------------
+ *
+ * The agent's sentence streams in the way its output does in a terminal, and
+ * the supporting fields settle in behind it.
+ *
+ * Every character is in the document from the first frame and only its opacity
+ * advances. Appending text as it types would reflow the paragraph on every
+ * character, and since the window sizes itself to its content that would mean
+ * resizing the window sixty times a second.
+ */
+
+.mn-char {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.mn-char.is-in {
+  opacity: 1;
+}
+
+.mn-block-in {
+  animation: mn-block-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mn-block-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- arrival -------------------------------------------------------------
+ *
+ * The panel drops in from behind the menu bar and settles.
+ *
+ * Transform and opacity only, deliberately. An earlier attempt animated the
+ * card's `height` to unroll it from its header, and it could not be made
+ * smooth: height is a layout property, so every frame relaid the contents, and
+ * it ran concurrently with the window being resized, the summary streaming in
+ * character by character, and the countdown ring redrawing — four things
+ * competing for the same frames. A transform is handed to the compositor and
+ * touches none of that.
+ *
+ * The throw is 22px and cannot be more. The window's top edge sits exactly at
+ * the bottom of the menu bar (macOS will not place it higher), so
+ * `--mn-shadow-pad-top` — 24px — is the entire clearance the card has above
+ * itself. Anything further and the card is clipped by the window as it falls.
+ * That constraint turns out to suit the effect: it emerges from behind the
+ * menu bar rather than flying in from off-screen.
+ */
+
+.mn-panel {
+  animation:
+    mn-appear 750ms cubic-bezier(0.22, 1.12, 0.36, 1) both,
+    mn-breathe 5s ease-in-out 1.4s infinite;
+}
+
+@keyframes mn-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+  /* Opaque a third of the way down, so the card is legible for most of the
+   * descent rather than fading and moving at once. */
+  32% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mn-breathe {
+  0%,
+  100% {
+    box-shadow: var(--mn-shadow);
+  }
+  50% {
+    box-shadow: var(--mn-glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

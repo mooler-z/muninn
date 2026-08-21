@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = ["crates/muninn-core", "crates/muninn-forward", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+repository = "https://github.com/mooler-z/muninn"
+
+[workspace.dependencies]
+muninn-core = { path = "crates/muninn-core" }
+serde = { version = "1", features = ["derive"] }
+# `preserve_order` so that rewriting someone's settings.json returns the keys
+# in the order they wrote them. Without it serde_json sorts alphabetically, and
+# `muninn init` would silently reshuffle a config file it was only asked to add
+# one entry to.
+serde_json = { version = "1", features = ["preserve_order"] }
+time = { version = "0.3", features = ["formatting", "parsing", "serde-well-known"] }
+
+# The panel is on screen for thirty seconds at a time and the app idles all day.
+# Optimising for size keeps the shim small and the app cheap to load.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

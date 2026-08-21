@@ -1,0 +1,19 @@
+[package]
+name = "muninn-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+time = { workspace = true, optional = true }
+
+[features]
+# `paths` is always compiled and pulls in nothing. Everything else sits behind
+# this feature so `muninn-forward` can depend on the crate with
+# default-features = false and stay genuinely dependency-free — see
+# crates/muninn-forward/src/main.rs for why that matters.
+default = ["model"]
+model = ["dep:serde", "dep:serde_json", "dep:time"]

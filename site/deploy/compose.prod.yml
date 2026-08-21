@@ -1,0 +1,48 @@
+# Muninn site on the shared multi-tenant VPS (host nginx terminates TLS).
+#
+#   docker compose --env-file /opt/muninn-site/shared/env/compose.env \
+#     -f compose.prod.yml up -d --build
+#
+# Conventions borrowed from the sibling apps on this box:
+#   - exactly ONE loopback host port; nothing else published
+#   - secrets live in /opt/muninn-site/shared/env/, chmod 640
+#
+# There is no database service. The analytics store is SQLite, a single file on
+# the bind mount below — which is the whole reason this deploys to a box with a
+# disk rather than to a serverless platform.
+name: muninn-site
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: muninn-site:latest
+    restart: unless-stopped
+    # Compose interpolates `env_file` values on this box's Compose version, so
+    # a `$` in any value must be doubled (`$$`). Easiest avoided: the admin
+    # password does not need one. See env/app.env.example.
+    env_file:
+      - ${MN_ENV_FILE:-/opt/muninn-site/shared/env/app.env}
+    ports:
+      # Host nginx proxies to this. Confirm no sibling holds it (§0 of DEPLOY).
+      - "127.0.0.1:${MN_PORT:-3520}:3000"
+    volumes:
+      # The SQLite file and its WAL. Everything the admin portal shows lives
+      # here, and it is the only state the container has.
+      - ${MN_DATA_DIR:-/opt/muninn-site/shared/data}:/data
+    # A static page and a handful of small queries. The cap exists so a runaway
+    # here cannot take the ~13 sibling apps down with it.
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      # Hits the real page, so a boot that fails to read the database is caught
+      # rather than reported healthy because the port opened.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

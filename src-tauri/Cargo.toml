@@ -1,0 +1,40 @@
+[package]
+name = "muninn"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Wake me when it's done."
+
+[lib]
+name = "muninn_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+muninn-core = { path = "../crates/muninn-core" }
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+time = { workspace = true, features = ["local-offset"] }
+
+# The raw-fallback path renders the agent's closing message as markdown. Raw
+# HTML events are dropped during rendering rather than sanitised afterwards, so
+# there is no html5ever-sized sanitiser in the tree — see src/markdown.rs.
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
+
+# Already in the tree via tauri; declared here only so `release_focus` can ask
+# AppKit to give activation back. Same versions, so nothing extra is compiled.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+  "std",
+  "NSApplication",
+  "NSResponder",
+] }
+
+[features]
+# Tauri wants this for `cargo build` outside the CLI.
+custom-protocol = ["tauri/custom-protocol"]

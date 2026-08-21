@@ -1,0 +1,261 @@
+/* ============ Muninn design tokens ============
+ *
+ * Carried over from the Claude Design project "Muninn design system review",
+ * names included, so `Muninn Panel States v2.dc.html` stays a readable
+ * reference against this file. Changing a value here should be a design
+ * decision, not a side effect of writing a component.
+ *
+ * Each palette value is written exactly once, as `--light-*` or `--dark-*`.
+ * The theme rules below only ever *map* those onto the `--mn-*` names the
+ * components use. The design canvas repeats both palettes in full because it
+ * has to show them side by side; doing that here meant three copies of every
+ * colour and a standing invitation for them to drift.
+ */
+
+:root {
+  /* type */
+  --mn-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, "Segoe UI", sans-serif;
+  --mn-font-serif: ui-serif, "New York", "Iowan Old Style", Palatino, Georgia, serif;
+  --mn-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* The agent's voice. Everything the agent said is set in this; everything
+   * Muninn knows first-hand is set in tracked capitals. See panel.css. */
+  --mn-font-voice: var(--mn-font-ui);
+
+  --mn-fs-meta: 10.5px;
+  --mn-fs-label: 10px;
+  --mn-fs-note: 12px;
+  --mn-fs-body: 13.5px;
+  --mn-fs-lead: 19px;
+  --mn-fs-mono: 11px;
+  --mn-lh-body: 1.55;
+  --mn-lh-lead: 1.45;
+
+  /* space + shape */
+  --mn-sp-1: 4px;
+  --mn-sp-2: 8px;
+  --mn-sp-3: 12px;
+  --mn-sp-4: 16px;
+  --mn-sp-5: 20px;
+  --mn-r: 22px;
+  --mn-r-s: 10px;
+  --mn-panel-w: 372px;
+
+  /* Room for the panel's own shadow inside a transparent window.
+   *
+   * This has to be *larger* than the furthest the shadow reaches. A shadow
+   * drawn past the window edge is not faded off, it is cut off — leaving a
+   * hard rectangle around the panel, which is the one artefact that makes a
+   * transparent window look like a box.
+   *
+   * The shadows below are scaled so their widest reach (66px, the dark glow
+   * below the panel) sits inside this with room to spare. panel.rs must agree;
+   * there is a test on both sides. */
+  --mn-shadow-pad: 72px;
+
+  /* Less above, because the shadow is thrown downwards and reaches only 22px
+   * over the top edge at rest.
+   *
+   * This is not a cosmetic saving. macOS refuses to place a window above the
+   * menu bar, so every pixel of transparent padding on top is a pixel the
+   * panel gets pushed down the screen — with 72 here the panel sat 58pt lower
+   * than intended and no longer read as being in the corner. */
+  --mn-shadow-pad-top: 24px;
+
+  /* One accent, one hue, tuned per theme. */
+  --mn-accent-light: oklch(0.60 0.15 38);
+  --mn-accent-dark: oklch(0.80 0.11 45);
+
+  /* --- light palette ---------------------------------------------------- */
+  --light-bg: linear-gradient(168deg, #fdefe4 0%, #f6d8ce 100%);
+  --light-fg: #4a332b;
+  --light-fg-2: #8a6a5d;
+  --light-fg-3: #b08e80;
+  --light-hairline: rgba(130, 80, 58, 0.2);
+  --light-avatar-bg: rgba(255, 255, 255, 0.4);
+  --light-accent-wash: color-mix(in oklab, var(--mn-accent-light) 15%, transparent);
+  --light-code-bg: rgba(130, 80, 58, 0.1);
+  --light-border: 1px solid color-mix(in oklab, var(--mn-accent-light) 40%, transparent);
+  /* The highlight on a raised edge, as if lit from above. */
+  --light-raise-top: rgba(255, 255, 255, 0.7);
+  /* Liquid glass. The tint is what the material itself is made of; the rim and
+   * specular are the light caught on its edges, brightest where it faces the
+   * light and fading round the far side. */
+  --light-glass-tint: rgba(255, 255, 255, 0.5);
+  --light-glass-rim: rgba(255, 255, 255, 0.55);
+  --light-glass-spec: rgba(255, 255, 255, 0.95);
+  --light-glass-shade: rgba(126, 74, 52, 0.16);
+  /* Flat equivalents of the panel's surface, for canvas drawing — fillStyle
+   * cannot take the gradient the panel itself uses. */
+  --light-surface: #fdefe4;
+  /* The warm half of the panel's own dichromatic shadow — the cast thrown to
+   * the right — used at the strength the design actually sets it.
+   *
+   * rgba(217,137,160) converts to oklch(0.719 0.101 1.3). An earlier attempt
+   * "pushed it to full strength" at 0.62/0.19 and the result was a hot magenta
+   * that had nothing to do with the rest of the panel: nearly double the
+   * chroma, and darker than the surface it sits on. The design keeps this
+   * colour dusty on purpose. */
+  --light-pink: oklch(0.72 0.10 1);
+  /* Dichromatic: a cool cast thrown left and a warm one right, over a neutral
+   * mauve drop. The panel reads as sitting in coloured light rather than as a
+   * card with a grey shadow under it.
+   *
+   * Offsets and blurs are the design's, scaled to 60%; the colours and alphas
+   * are untouched. The design canvas has an unbounded page to spill onto and
+   * the app has a window edge, and at full size the spill was being cut square.
+   * A tighter shadow at the same alpha also reads a little crisper, which
+   * suits a 372px panel. */
+  --light-shadow:
+    0 0 0 0.5px rgba(150, 88, 60, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 14px 36px rgba(141, 122, 140, 0.3),
+    0 2px 10px rgba(141, 122, 140, 0.12),
+    -11px 5px 26px rgba(90, 119, 148, 0.22),
+    11px 7px 29px rgba(217, 137, 160, 0.28);
+  /* A quieter glow, for surfaces large enough that the full one becomes a haze
+   * around the whole window rather than a lift under a small card. Sits between
+   * the resting shadow and the glow, nearer the shadow. */
+  --light-glow-soft:
+    0 0 0 0.5px rgba(150, 88, 60, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 16px 40px rgba(141, 122, 140, 0.32),
+    0 2px 10px rgba(141, 122, 140, 0.13),
+    -12px 5px 29px rgba(90, 119, 148, 0.26),
+    12px 8px 32px rgba(217, 137, 160, 0.32);
+  --light-glow:
+    0 0 0 0.5px rgba(150, 88, 60, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 18px 46px rgba(141, 122, 140, 0.38),
+    0 2px 10px rgba(141, 122, 140, 0.14),
+    -16px 6px 42px rgba(90, 119, 148, 0.45),
+    16px 10px 44px rgba(216, 110, 145, 0.5);
+
+  /* --- dark palette ------------------------------------------------------ */
+  --dark-bg: linear-gradient(168deg, #332320 0%, #2c1b20 100%);
+  --dark-fg: #f5e7dd;
+  --dark-fg-2: #cbab9d;
+  --dark-fg-3: #9a7d71;
+  --dark-hairline: rgba(245, 231, 221, 0.14);
+  --dark-avatar-bg: rgba(255, 235, 220, 0.06);
+  --dark-accent-wash: color-mix(in oklab, var(--mn-accent-dark) 20%, transparent);
+  --dark-code-bg: rgba(245, 231, 221, 0.1);
+  --dark-border: 1px solid color-mix(in oklab, var(--mn-accent-dark) 30%, #3a2823);
+  --dark-raise-top: rgba(255, 235, 220, 0.45);
+  /* Darker glass holds less light, so the specular carries the edge instead of
+   * the fill. */
+  --dark-glass-tint: rgba(255, 238, 228, 0.1);
+  --dark-glass-rim: rgba(255, 236, 224, 0.22);
+  --dark-glass-spec: rgba(255, 244, 236, 0.5);
+  --dark-glass-shade: rgba(0, 0, 0, 0.38);
+  --dark-surface: #2c1b20;
+  /* The dark theme's cast is rgba(192,64,119) — oklch(0.568 0.171 358). Lifted
+   * in lightness so a 3px stroke still reads against a dark panel, but held
+   * near the design's chroma rather than past it. */
+  --dark-pink: oklch(0.70 0.12 358);
+  /* Coloured rather than black: the panel is lit, not cut out. Same cool-left,
+   * warm-right pair as the light theme, pushed harder because there is more
+   * room for it against a dark desktop. */
+  --dark-shadow:
+    0 0 0 0.5px rgba(255, 200, 170, 0.22),
+    inset 0 1px 0 rgba(255, 225, 205, 0.14),
+    0 14px 36px rgba(109, 84, 98, 0.5),
+    0 2px 10px rgba(109, 84, 98, 0.2),
+    -11px 5px 28px rgba(90, 119, 148, 0.35),
+    11px 7px 30px rgba(192, 64, 119, 0.35);
+  --dark-glow-soft:
+    0 0 0 0.5px rgba(255, 200, 170, 0.22),
+    inset 0 1px 0 rgba(255, 225, 205, 0.14),
+    0 16px 40px rgba(109, 84, 98, 0.52),
+    0 2px 10px rgba(109, 84, 98, 0.2),
+    -12px 5px 31px rgba(90, 119, 148, 0.26),
+    12px 8px 33px rgba(192, 64, 119, 0.28);
+  --dark-glow:
+    0 0 0 0.5px rgba(255, 200, 170, 0.28),
+    inset 0 1px 0 rgba(255, 225, 205, 0.18),
+    0 18px 48px rgba(109, 84, 98, 0.6),
+    0 2px 10px rgba(109, 84, 98, 0.24),
+    -16px 6px 43px rgba(116, 150, 185, 0.5),
+    16px 10px 46px rgba(203, 80, 130, 0.55);
+}
+
+/* --- mapping -------------------------------------------------------------
+ *
+ * The app follows the system; the `[data-theme]` attributes override it, for
+ * the fixtures harness and for the menu bar's Appearance choice.
+ *
+ * The `:not([data-theme])` on the media query is load-bearing. A media query
+ * adds no specificity, so `@media { :root }` and `[data-theme="light"]` score
+ * identically and source order alone decides the winner — which meant forcing
+ * light on a dark system did nothing at all. Scoping the system rule to "no
+ * override present" removes the tie instead of trying to out-order it.
+ */
+
+:root,
+[data-theme="light"] {
+  --mn-bg: var(--light-bg);
+  --mn-fg: var(--light-fg);
+  --mn-fg-2: var(--light-fg-2);
+  --mn-fg-3: var(--light-fg-3);
+  --mn-hairline: var(--light-hairline);
+  --mn-avatar-bg: var(--light-avatar-bg);
+  --mn-accent: var(--mn-accent-light);
+  --mn-accent-wash: var(--light-accent-wash);
+  --mn-code-bg: var(--light-code-bg);
+  --mn-border: var(--light-border);
+  --mn-raise-top: var(--light-raise-top);
+  --mn-glass-tint: var(--light-glass-tint);
+  --mn-glass-rim: var(--light-glass-rim);
+  --mn-glass-spec: var(--light-glass-spec);
+  --mn-glass-shade: var(--light-glass-shade);
+  --mn-pink: var(--light-pink);
+  --mn-shadow: var(--light-shadow);
+  --mn-glow: var(--light-glow);
+  --mn-glow-soft: var(--light-glow-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --mn-bg: var(--dark-bg);
+    --mn-fg: var(--dark-fg);
+    --mn-fg-2: var(--dark-fg-2);
+    --mn-fg-3: var(--dark-fg-3);
+    --mn-hairline: var(--dark-hairline);
+    --mn-avatar-bg: var(--dark-avatar-bg);
+    --mn-accent: var(--mn-accent-dark);
+    --mn-accent-wash: var(--dark-accent-wash);
+    --mn-code-bg: var(--dark-code-bg);
+    --mn-border: var(--dark-border);
+    --mn-raise-top: var(--dark-raise-top);
+    --mn-glass-tint: var(--dark-glass-tint);
+    --mn-glass-rim: var(--dark-glass-rim);
+    --mn-glass-spec: var(--dark-glass-spec);
+    --mn-glass-shade: var(--dark-glass-shade);
+    --mn-pink: var(--dark-pink);
+    --mn-shadow: var(--dark-shadow);
+    --mn-glow: var(--dark-glow);
+    --mn-glow-soft: var(--dark-glow-soft);
+  }
+}
+
+[data-theme="dark"] {
+  --mn-bg: var(--dark-bg);
+  --mn-fg: var(--dark-fg);
+  --mn-fg-2: var(--dark-fg-2);
+  --mn-fg-3: var(--dark-fg-3);
+  --mn-hairline: var(--dark-hairline);
+  --mn-avatar-bg: var(--dark-avatar-bg);
+  --mn-accent: var(--mn-accent-dark);
+  --mn-accent-wash: var(--dark-accent-wash);
+  --mn-code-bg: var(--dark-code-bg);
+  --mn-border: var(--dark-border);
+  --mn-raise-top: var(--dark-raise-top);
+  --mn-glass-tint: var(--dark-glass-tint);
+  --mn-glass-rim: var(--dark-glass-rim);
+  --mn-glass-spec: var(--dark-glass-spec);
+  --mn-glass-shade: var(--dark-glass-shade);
+  --mn-pink: var(--dark-pink);
+  --mn-shadow: var(--dark-shadow);
+  --mn-glow: var(--dark-glow);
+  --mn-glow-soft: var(--dark-glow-soft);
+}

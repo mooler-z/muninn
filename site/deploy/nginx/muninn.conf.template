@@ -1,0 +1,100 @@
+# Host nginx vhost for the Muninn site. HTTP-ONLY on purpose:
+# `certbot --nginx` parses this :80 block and injects the :443 block and cert
+# references in place. Adding `listen 443 ssl` here makes `nginx -t` fail
+# before certbot ever runs — the same trap the sibling my-future and SAB apps
+# both document.
+#
+# Install:
+#   sed "s|\${MN_DOMAIN}|$DOMAIN|g; s|\${MN_PORT}|$PORT|g" muninn.conf.template \
+#     > /etc/nginx/sites-available/muninn-site
+#   ln -sf /etc/nginx/sites-available/muninn-site /etc/nginx/sites-enabled/muninn-site
+#   nginx -t && systemctl reload nginx
+#   certbot --nginx -d "$DOMAIN" --redirect --hsts --staple-ocsp
+
+# Zones are global to nginx and must be declared exactly once per box. The
+# `mn_` prefix keeps them from colliding with the siblings' `mf_` zones.
+#
+# If this template is ever rendered a second time (another domain onto the same
+# app), delete these three lines from the second file — the `limit_req` and
+# `limit_conn` *usages* below stay and reference the zones declared here.
+limit_req_zone $binary_remote_addr zone=mn_login:10m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=mn_beacon:10m rate=30r/m;
+limit_conn_zone $binary_remote_addr zone=mn_conn:10m;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${MN_DOMAIN};
+
+    # Nothing is uploaded to this site. The largest request it should ever see
+    # is a page-view beacon of a few hundred bytes.
+    client_max_body_size 64k;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()" always;
+    # 'unsafe-inline' for scripts covers Next's bootstrap payload and the
+    # pre-paint theme snippet in the layout; for styles, GSAP writes inline
+    # transforms on every animated element. No 'unsafe-eval'. Everything else
+    # is locked to self — the page loads no third-party anything, which is a
+    # claim it makes in its own footer, so the CSP is what enforces it.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" always;
+
+    limit_conn mn_conn 24;
+
+    # Unauthenticated, and the only way into the admin portal. The app also
+    # rate-limits in memory, but that counter resets on every deploy and this
+    # one does not.
+    location = /api/admin/login {
+        limit_req zone=mn_login burst=5 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:${MN_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Public and unauthenticated, so it is the one endpoint anyone could use to
+    # inflate the figures. A real reader sends one of these per page view.
+    location = /api/track {
+        limit_req zone=mn_beacon burst=10 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:${MN_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Hashed filenames, so these are safe to cache hard and for a long time.
+    # Next sets immutable caching itself; this keeps it if a proxy strips it.
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:${MN_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_cache_valid 200 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:${MN_PORT};
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        # The visitor hash is salted with this. The FIRST entry of
+        # X-Forwarded-For is client-controlled; lib/analytics.ts reads it only
+        # to hash it, and never stores it.
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # REQUIRED. The admin session cookie is only marked Secure when the app
+        # believes it is on https. Omit this and signing in appears to work but
+        # never persists.
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 60s;
+    }
+}

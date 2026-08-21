@@ -1,0 +1,2479 @@
+/* ============ Muninn landing ============
+ *
+ * Ported from `Muninn Landing.dc.html`. The design canvas ships inline styles
+ * throughout because that is what a canvas is; this extracts them to semantic
+ * classes so the page can be maintained.
+ *
+ * Two registers carry through from the app, and they are the reason the page
+ * looks like the product:
+ *
+ *   .mn-fact   something known first-hand — a label, a project, a status word.
+ *              Tracked capitals.
+ *   .mn-voice  prose. Sentence type, set light.
+ *
+ * A claim the agent made is quoted by the stylesheet rather than by the markup,
+ * so a claim can never be rendered and lose its quotation marks by accident.
+ */
+
+/* The wordmark face. `swap` so the name is readable in the serif fallback
+ * while 16 KB arrives, rather than the header sitting blank. */
+@font-face {
+  font-family: "Muninn Display";
+  src: url("/fonts/caesar-dressing.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Lenis puts these on <html> at runtime, so nothing in the markup ever
+ * mentions them. They are not dead rules — deleting them turns the smooth
+ * scroll back into native scrolling that fights it. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* A little air above an anchored section, not a gap. */
+  scroll-padding-top: 24px;
+  background: var(--mn-surface);
+}
+
+body {
+  margin: 0;
+  background: var(--mn-page-bg);
+  background-attachment: fixed;
+  color: var(--mn-fg);
+  font: 400 15px/1.55 var(--mn-font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
+}
+
+::selection {
+  background: var(--mn-selection);
+}
+
+a {
+  color: var(--mn-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+/* Visible only when tabbed to — the first stop for a keyboard visitor. */
+.mn-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  padding: 12px 18px;
+  border-radius: var(--mn-r-s);
+  background: var(--mn-surface);
+  color: var(--mn-fg);
+  font: 500 12px/1 var(--mn-font-ui);
+}
+
+.mn-skip:focus {
+  left: 12px;
+  top: 12px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--mn-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* --- motion ---------------------------------------------------------------
+ *
+ * Restrained, and always because something happened. The panel breathes at
+ * rest; nothing counts up, nothing spins. Design principle §6: nothing is
+ * happening — that is the point.
+ */
+
+@keyframes mn-breathe {
+  0%,
+  100% {
+    box-shadow: var(--mn-shadow);
+  }
+  50% {
+    box-shadow: var(--mn-glow-soft);
+  }
+}
+
+@keyframes mn-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- layout --------------------------------------------------------------- */
+
+.mn-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 36px;
+}
+
+/* The footer sits in its own wrapper, outside <main>. It carries the page's
+ * bottom space; the sections wrapper would otherwise add its own on top of the
+ * footer's margin and open a 250px hole. */
+.mn-wrap:last-of-type {
+  padding-bottom: 120px;
+}
+
+/* The page's outer inset. The hero card sits in this, so the card's rounded
+ * corners have something to be rounded against. */
+.mn-shell {
+  padding: 14px;
+}
+
+.mn-section {
+  padding-top: 110px;
+}
+
+.mn-measure {
+  max-width: 58ch;
+}
+
+/* --- registers ------------------------------------------------------------ */
+
+/* Muninn's own voice: labels, status words, anything known first-hand. */
+.mn-fact {
+  font-family: var(--mn-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--mn-fg-3);
+  display: inline-block;
+}
+
+.mn-voice {
+  font-family: var(--mn-font-ui);
+  text-wrap: pretty;
+}
+
+/* Quoted by the stylesheet, never by the template. */
+.mn-claim::before {
+  content: "\201C";
+}
+
+.mn-claim::after {
+  content: "\201D";
+}
+
+.mn-serif {
+  font-family: var(--mn-font-serif);
+  font-weight: 400;
+  text-wrap: pretty;
+}
+
+/* An inline code fragment. Monospace is only ever for paths, commands and
+ * code — never for atmosphere. */
+.mn-code {
+  font: 400 0.85em/1 var(--mn-font-mono);
+  background: var(--mn-code-bg);
+  border-radius: 5px;
+  padding: 2px 5px;
+}
+
+.mn-section-title {
+  margin: 14px 0 0;
+  font: 400 clamp(27px, 4vw, 34px) / 1.2 var(--mn-font-serif);
+  text-wrap: balance;
+}
+
+.mn-section-note {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* --- liquid glass ---------------------------------------------------------
+ *
+ * The material every control in the app is made of. The tint is what the glass
+ * itself is made of; the rim and the specular are light caught on its edges,
+ * brightest where it faces the light and fading round the far side.
+ *
+ * No `backdrop-filter`, deliberately. In the app it shimmered — the panel
+ * breathes on a loop, so it repaints continuously, and every repaint made the
+ * blur re-sample its backdrop. Little is lost: what actually reads as glass is
+ * the gradient rim, the specular edge and the depth below, and here the
+ * backdrop is a smooth gradient with no detail to refract anyway.
+ */
+
+.mn-glass {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  cursor: pointer;
+  color: var(--mn-fg);
+  background: linear-gradient(
+    180deg,
+    var(--mn-glass-tint) 0%,
+    color-mix(in oklab, var(--mn-glass-tint) 46%, transparent) 52%,
+    color-mix(in oklab, var(--mn-glass-tint) 78%, transparent) 100%
+  );
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    inset 0 -7px 12px -9px var(--mn-glass-shade),
+    0 1px 1.5px var(--mn-drop-soft),
+    0 5px 12px -7px var(--mn-drop-deep);
+  transition:
+    background 160ms ease-out,
+    box-shadow 160ms ease-out,
+    color 140ms ease-out,
+    transform 70ms ease-out;
+}
+
+/* The rim: a gradient ring rather than a border colour, masked so only the
+ * one-pixel edge of the gradient survives. */
+.mn-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    155deg,
+    var(--mn-glass-spec) 0%,
+    var(--mn-glass-rim) 34%,
+    color-mix(in oklab, var(--mn-glass-rim) 25%, transparent) 62%,
+    var(--mn-glass-rim) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.mn-glass:hover {
+  text-decoration: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--mn-glass-tint) 125%, white) 0%,
+    color-mix(in oklab, var(--mn-glass-tint) 68%, transparent) 52%,
+    color-mix(in oklab, var(--mn-glass-tint) 95%, transparent) 100%
+  );
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    inset 0 -7px 12px -9px var(--mn-glass-shade),
+    0 2px 3px var(--mn-drop-soft),
+    0 8px 17px -8px var(--mn-drop-deep);
+}
+
+/* Pressed: the light moves inside. It stops being a raised thing. */
+.mn-glass:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    inset 0 2px 5px -1px var(--mn-glass-shade),
+    inset 0 1px 0 color-mix(in oklab, var(--mn-glass-spec) 30%, transparent),
+    0 1px 1px var(--mn-drop-soft);
+}
+
+/* The one round control, as in the app's footer. */
+.mn-round {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* The call to action. Same pill as the app's Details button, scaled up. */
+.mn-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px 13px 19px;
+  border-radius: 14px;
+  font: 600 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* --- the fixed header -----------------------------------------------------
+ *
+ * A floating capsule, not a bar — the same liquid-glass material as every
+ * other control, inset from the edges and floating over the hero rather than
+ * capping it. At the top of the page it is invisible: just the mark and the
+ * links on the hero. Once you scroll it draws itself in and contracts.
+ *
+ * NOTE: `mn-header` and `is-stuck` are composed in SiteHeader.tsx as a
+ * ternary, not a string literal — any tooling that greps className="..." to
+ * find dead CSS will think this rule is unused. It is not. Removing it drops
+ * the header into normal flow and pushes the hero card off fullscreen.
+ */
+.mn-header {
+  position: fixed;
+  /* Matches `.mn-shell`, so the capsule lines up with the hero card's inset. */
+  inset: 14px 14px auto;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.mn-header-inner {
+  pointer-events: auto;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 12px 0 22px;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition:
+    max-width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 340ms ease,
+    border-color 340ms ease,
+    box-shadow 340ms ease,
+    backdrop-filter 340ms ease;
+}
+
+.mn-header.is-stuck .mn-header-inner {
+  /* Contracts inward — the page is what matters now, not the chrome. */
+  max-width: 640px;
+  height: 60px;
+  background-color: color-mix(in oklab, var(--mn-page-top) 62%, transparent);
+  border-color: var(--mn-glass-rim);
+  backdrop-filter: blur(20px) saturate(1.35);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    0 6px 18px -8px var(--mn-drop-deep);
+}
+
+.mn-header .mn-logo--nav,
+.mn-header .mn-brand-name {
+  transition:
+    height 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    font-size 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mn-header.is-stuck .mn-logo--nav {
+  height: 26px;
+}
+
+.mn-header.is-stuck .mn-brand-name {
+  font-size: 18px;
+}
+
+.mn-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--mn-fg);
+}
+
+/*
+ * A display face needs far less tracking than the 12px UI capitals it replaced
+ * — at 0.3em the letters stop reading as a word.
+ *
+ * Caesar Dressing is a rough, gouged face with uneven edges, so it is set a
+ * little larger than a clean one would need: the deliberate roughness only
+ * reads as carving above about 24px, and below that it just looks blurry.
+ */
+.mn-brand-name {
+  font: 400 27px/1 var(--mn-font-display);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.mn-nav-side {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mn-nav-link {
+  font: 500 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-2);
+}
+
+.mn-nav-link:hover {
+  color: var(--mn-fg);
+}
+
+/* Both icons ship; the theme decides which is drawn. Cheaper and less
+ * flickery than swapping nodes, and it works before any script runs. */
+.mn-icon-sun,
+.mn-icon-moon {
+  display: none;
+}
+
+:root:not([data-theme]) .mn-icon-moon,
+[data-theme="dark"] .mn-icon-moon {
+  display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .mn-icon-moon {
+    display: none;
+  }
+  :root:not([data-theme]) .mn-icon-sun {
+    display: block;
+  }
+}
+
+[data-theme="light"] .mn-icon-sun {
+  display: block;
+}
+
+[data-theme="light"] .mn-icon-moon {
+  display: none;
+}
+
+/* --- hero ----------------------------------------------------------------- */
+
+/* --- the hero card --------------------------------------------------------
+ *
+ * The whole hero is one rounded card inset from the page edges, with the
+ * header floating over its top. It is the page's single most expensive
+ * element, so it carries the strong glow rather than the resting shadow —
+ * this is the one place a haze around the whole thing is the intent.
+ */
+
+.mn-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  background: var(--mn-bg);
+  box-shadow: var(--mn-glow-soft);
+  padding: 120px 0 60px;
+  /* Full screen, less the shell's inset top and bottom. */
+  min-height: calc(100vh - 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  text-align: center;
+}
+
+/* A pool of accent light behind the fan, so the cards emerge from something
+ * rather than floating on a flat field. */
+.mn-hero-card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -46%;
+  width: 108%;
+  aspect-ratio: 2 / 1;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    color-mix(in oklab, var(--mn-accent) 20%, transparent) 0%,
+    transparent 62%
+  );
+  pointer-events: none;
+}
+
+.mn-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The local claim, above the headline.
+ *
+ * Carries the accent, which nothing else in the hero does — this is the first
+ * thing read and the question every agent-adjacent tool has to answer before
+ * it is allowed near a codebase. Loud enough to be the answer, small enough
+ * that it is still the headline you read next. */
+.mn-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  font: 500 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-accent);
+}
+
+.mn-hero-eyebrow i {
+  width: 44px;
+  height: 2px;
+  background: var(--mn-accent);
+}
+
+/* Sized so each sentence holds its own line at desktop widths.
+ *
+ * The two sentences are a parallel — same opening, two different things you
+ * keep — and a parallel only reads as one when the repetition lands at the
+ * same place twice. Four wrapped lines is the same words with the shape taken
+ * out. Hence the smaller cap and the wider measure than a headline this short
+ * would otherwise want. */
+.mn-hero-title {
+  margin: 30px 0 0;
+  font: 400 clamp(38px, 6.2vw, 80px) / 1.08 var(--mn-font-serif);
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+}
+
+/* The two things at stake carry the emphasis — but blended most of the way
+ * back toward the foreground. At this size the raw accent stops being a
+ * highlight and becomes a hazard colour; emphasis here should read as
+ * warmth, not alarm. */
+.mn-hero-title em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--mn-accent) 55%, var(--mn-fg));
+}
+
+.mn-hero-line {
+  display: block;
+}
+
+.mn-hero-sub {
+  margin: 34px 0 0;
+  font: 300 clamp(15px, 1.9vw, 18px) / 1.6 var(--mn-font-ui);
+  color: var(--mn-fg-2);
+  max-width: 58ch;
+  text-wrap: pretty;
+}
+
+.mn-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 38px;
+  flex-wrap: wrap;
+}
+
+/* The primary action carries a filled disc with an arrow in it — the one
+ * place on the page the accent is used as a fill rather than as ink. */
+.mn-cta-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: var(--mn-accent);
+  color: var(--mn-page-top);
+  flex: none;
+}
+
+.mn-cta--primary {
+  padding: 9px 9px 9px 20px;
+  gap: 12px;
+}
+
+/* --- the strip under the headline ----------------------------------------
+ *
+ * Where the reference this layout follows puts a star rating and a client
+ * count. Muninn has neither, and inventing them on a page whose subject is not
+ * fabricating things would be a strange way to open. These are all true.
+ */
+
+.mn-hero-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 22px;
+  margin-top: 60px;
+}
+
+.mn-hero-strip span {
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.mn-hero-strip i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--mn-accent);
+}
+
+/* --- the panel ------------------------------------------------------------
+ *
+ * Built from the app's real geometry rather than screenshotted, so it stays
+ * sharp at any density and follows the page's theme.
+ *
+ * The frame's padding is not decorative. The dichromatic shadow reaches about
+ * 66px at its widest, and a shadow that meets an edge is not faded off, it is
+ * cut off — leaving a hard rectangle, which is the one artefact that makes the
+ * whole effect collapse.
+ */
+
+.mn-panel-frame {
+  flex: none;
+  /* Clearance for the shadow's reach. Cut down with the shadows themselves —
+   * it only has to exceed how far they actually spread. */
+  padding: 22px 14px;
+}
+
+.mn-panel {
+  width: var(--mn-panel-w);
+  max-width: 100%;
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  box-shadow: var(--mn-shadow);
+  padding: 18px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  color: var(--mn-fg);
+}
+
+.mn-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.mn-avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--mn-hairline);
+  background: var(--mn-avatar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 300 13px/1 var(--mn-font-ui);
+  color: var(--mn-fg-2);
+}
+
+.mn-panel-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mn-project {
+  font: 500 11.5px/1.2 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg);
+}
+
+.mn-branch {
+  font: 400 10px/1.3 var(--mn-font-mono);
+  color: var(--mn-fg-3);
+}
+
+.mn-panel-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+  color: var(--mn-fg-3);
+}
+
+.mn-time {
+  font: 400 10.5px/1.3 var(--mn-font-ui);
+}
+
+/* Status colour is never used alone — always an icon *and* a word, for
+ * colour-blind readers and for glanceability. Finishing earns no colour at
+ * all; the accent means "you are needed" and nothing else. */
+.mn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mn-fg-2);
+}
+
+.mn-status--needed {
+  color: var(--mn-accent);
+}
+
+.mn-status svg {
+  flex: none;
+}
+
+.mn-status-word {
+  font: 500 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.mn-headline {
+  margin: 0;
+  font: 300 19px/1.45 var(--mn-font-ui);
+  text-wrap: pretty;
+}
+
+.mn-rule {
+  height: 1px;
+  background: var(--mn-hairline);
+}
+
+.mn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mn-field p {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--mn-font-ui);
+  text-wrap: pretty;
+}
+
+.mn-field--quiet p {
+  color: var(--mn-fg-2);
+}
+
+/* --- numbered steps ------------------------------------------------------- */
+
+.mn-steps {
+  flex: 1;
+  min-width: 300px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.mn-step {
+  display: flex;
+  gap: 18px;
+}
+
+.mn-step-num {
+  flex: none;
+  font: 400 11px/1.6 var(--mn-font-mono);
+  color: var(--mn-fg-3);
+}
+
+.mn-step p {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.mn-steps--tight .mn-step p {
+  margin: 0;
+}
+
+.mn-step .mn-fact {
+  letter-spacing: 0.22em;
+}
+
+/* --- side-by-side --------------------------------------------------------- */
+
+.mn-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 56px;
+  margin-top: 44px;
+  align-items: flex-start;
+}
+
+.mn-split--stretch {
+  gap: 32px;
+  margin-top: 40px;
+  align-items: stretch;
+}
+
+/* --- the summary contract ------------------------------------------------- */
+
+.mn-code-card {
+  flex: 1;
+  min-width: 320px;
+  max-width: 560px;
+  background: var(--mn-code-bg);
+  border: 1px solid var(--mn-hairline);
+  border-radius: var(--mn-r-s);
+  padding: 22px 24px;
+}
+
+.mn-code-card pre {
+  margin: 14px 0 0;
+  font: 400 12.5px/1.7 var(--mn-font-mono);
+  color: var(--mn-fg);
+  /* The block is authored to fit; wrapping is the fallback, not the plan. */
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.mn-code-aside {
+  flex: 1;
+  min-width: 280px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.mn-code-aside p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.mn-code-aside .mn-serif {
+  font-size: 22px;
+  line-height: 1.45;
+}
+
+.mn-code-aside .mn-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+}
+
+/* --- the details window --------------------------------------------------- */
+
+.mn-window-frame {
+  margin-top: 40px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.mn-window {
+  width: 100%;
+  max-width: 640px;
+  background: var(--mn-bg);
+  border-radius: var(--mn-r);
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+.mn-window-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-bottom: 1px solid var(--mn-hairline);
+}
+
+.mn-window-dots {
+  position: absolute;
+  left: 14px;
+  display: flex;
+  gap: 7px;
+}
+
+.mn-window-dots span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--mn-avatar-bg);
+  border: 1px solid var(--mn-hairline);
+}
+
+.mn-window-title {
+  font: 500 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--mn-fg-2);
+}
+
+.mn-window-body {
+  padding: 24px 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mn-window-body p {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.mn-window-body .mn-quiet {
+  color: var(--mn-fg-2);
+}
+
+.mn-window-cols {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+/* --- the honesty rule ----------------------------------------------------- */
+
+.mn-honesty {
+  padding-top: 120px;
+  text-align: center;
+}
+
+.mn-verified {
+  margin-top: 34px;
+  font: 500 clamp(20px, 4.6vw, 40px) / 1 var(--mn-font-ui);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--mn-fg);
+}
+
+/* The second half is the whole point: Muninn did not check it. */
+.mn-verified span {
+  color: var(--mn-fg-3);
+}
+
+.mn-honesty-quote {
+  margin: 22px 0 0;
+  font: 400 15px/1.55 var(--mn-font-ui);
+  color: var(--mn-fg-2);
+}
+
+.mn-honesty-line {
+  margin: 26px auto 0;
+  font: 400 clamp(19px, 3vw, 22px) / 1.5 var(--mn-font-serif);
+  max-width: 36ch;
+  text-wrap: balance;
+}
+
+.mn-honesty-note {
+  margin: 16px auto 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  max-width: 52ch;
+  text-wrap: pretty;
+}
+
+.mn-game-copy .mn-serif {
+  font-size: 21px;
+  line-height: 1.4;
+}
+
+.mn-game-copy .mn-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+}
+
+.mn-game-stats {
+  margin-top: 14px;
+  letter-spacing: 0.18em;
+  line-height: 1.8;
+}
+
+/* The cube: two isometric layers, the lower one dimmed so the volume reads as
+ * having something behind it — which is the whole idea of the game. */
+.mn-cube-frame {
+  flex: none;
+  width: 250px;
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mn-cube {
+  position: relative;
+  width: 190px;
+  height: 170px;
+}
+
+.mn-cube-layer {
+  position: absolute;
+  left: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 9px;
+  transform: rotateX(54deg) rotateZ(45deg);
+}
+
+.mn-cube-layer--under {
+  top: 24px;
+  opacity: 0.45;
+}
+
+.mn-cube-layer--over {
+  top: -6px;
+}
+
+.mn-cube-cell {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 15px/1 var(--mn-font-mono);
+  color: var(--mn-fg-2);
+  background: var(--mn-glass-tint);
+  border: 1px solid var(--mn-glass-rim);
+  box-shadow: inset 0 1px 0.5px var(--mn-glass-spec);
+}
+
+.mn-cube-layer--under .mn-cube-cell {
+  background: var(--mn-code-bg);
+  border-color: var(--mn-hairline);
+  box-shadow: none;
+}
+
+/* The cell under the pointer takes the accent, as it does in the game. */
+.mn-cube-cell--hot {
+  background: var(--mn-accent-wash);
+  border-color: color-mix(in oklab, var(--mn-accent) 55%, transparent);
+}
+
+.mn-disperse {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mn-disperse-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+.mn-disperse-track {
+  flex: 1;
+  height: 1px;
+  background: var(--mn-hairline);
+  position: relative;
+}
+
+.mn-disperse-thumb {
+  position: absolute;
+  left: 38%;
+  top: -5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--mn-glass-tint);
+  border: 1px solid var(--mn-glass-rim);
+  box-shadow: inset 0 1px 0.5px var(--mn-glass-spec);
+}
+
+.mn-install-note {
+  font-size: 12px;
+  color: var(--mn-fg-3);
+}
+
+/* --- footer --------------------------------------------------------------- */
+
+.mn-footer {
+  margin-top: 130px;
+  border-top: 1px solid var(--mn-hairline);
+  padding-top: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 44px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mn-myth {
+  max-width: 480px;
+  display: flex;
+  gap: 18px;
+}
+
+.mn-myth svg {
+  flex: none;
+  color: var(--mn-fg-3);
+}
+
+.mn-myth p {
+  margin: 0;
+  font: 400 15px/1.65 var(--mn-font-serif);
+  font-style: italic;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.mn-myth .mn-fact {
+  margin-top: 12px;
+}
+
+.mn-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--mn-fg-3);
+}
+
+.mn-footer-links a {
+  color: var(--mn-fg-2);
+}
+
+/* --- narrow --------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .mn-section {
+    padding-top: 84px;
+  }
+
+  .mn-hero {
+    gap: 24px;
+    padding-top: 48px;
+  }
+
+  .mn-split {
+    gap: 36px;
+  }
+
+  /* The panel is fixed-width by nature — it is a 372px window. Below this it
+   * stops being a supporting illustration and starts pushing the layout, so it
+   * gets its own line and centres. */
+  .mn-panel-frame {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 24px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mn-wrap {
+    padding: 0 20px;
+  }
+
+  .mn-wrap:last-of-type {
+    padding-bottom: 80px;
+  }
+
+  .mn-header-inner {
+    padding: 0 10px 0 16px;
+    height: 62px;
+  }
+
+  .mn-header.is-stuck .mn-header-inner {
+    height: 56px;
+  }
+
+  .mn-section {
+    padding-top: 72px;
+  }
+
+  .mn-honesty {
+    padding-top: 84px;
+  }
+
+  .mn-verified {
+    letter-spacing: 0.18em;
+  }
+
+  .mn-facts > div {
+    padding-right: 0;
+  }
+
+  .mn-footer {
+    margin-top: 90px;
+  }
+
+  .mn-window-cols {
+    gap: 24px;
+  }
+
+  .mn-game-main {
+    padding: 24px;
+  }
+
+  /* The cube illustration is the first thing to go — it is decoration, and at
+   * this width it would be a 190px isometric drawing squeezed beside prose. */
+  .mn-cube-frame {
+    display: none;
+  }
+}
+
+/* --- odds and ends -------------------------------------------------------- */
+
+/*
+ * The raven.
+ *
+ * The artwork is a black silhouette, so it is used as a mask and painted with
+ * `currentColor` — otherwise it would be invisible on the dark theme, which is
+ * the one the page leads with. The aspect ratio is the drawing's own so the box
+ * matches the art rather than cropping it.
+ */
+.mn-logo {
+  display: block;
+  flex: none;
+  aspect-ratio: 150 / 192;
+  background: currentColor;
+  -webkit-mask-image: url("/muninn-raven.png");
+  mask-image: url("/muninn-raven.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.mn-logo--nav {
+  height: 42px;
+}
+
+.mn-logo--foot {
+  height: 52px;
+}
+
+.mn-window-mono {
+  font: 400 11.5px/1.7 var(--mn-font-mono);
+}
+
+.mn-window-claim {
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+/* --- the centred statement ------------------------------------------------ */
+
+.mn-statement {
+  padding-top: 110px;
+  text-align: center;
+}
+
+/* A dot before the eyebrow, as in the reference — it turns a label into a
+ * marker. */
+.mn-eyebrow-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mn-eyebrow-dot::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--mn-accent);
+}
+
+.mn-statement-line {
+  margin: 26px auto 0;
+  max-width: 20ch;
+  font: 400 clamp(30px, 5.2vw, 58px) / 1.14 var(--mn-font-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* The plain-language version, under the slogan. The line above is the claim
+ * made memorably; this is the same claim made checkably, because a visitor who
+ * has read a headline still does not know what they would be installing. */
+.mn-statement-note {
+  margin: 26px auto 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* The half of the sentence that is the qualifier, not the claim. */
+.mn-statement-line em {
+  font-style: normal;
+  color: var(--mn-fg-3);
+}
+
+/* An icon set inline in the headline, sitting on the text baseline like a
+ * word. Sized in `em` so it scales with the clamp above it. */
+.mn-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.82em;
+  height: 0.82em;
+  margin: 0 0.1em;
+  border-radius: 50%;
+  vertical-align: -0.06em;
+  background: var(--mn-accent);
+  color: var(--mn-page-top);
+}
+
+.mn-inline-badge svg {
+  width: 55%;
+  height: 55%;
+}
+
+.mn-inline-badge--quiet {
+  background: color-mix(in oklab, var(--mn-fg) 14%, transparent);
+  color: var(--mn-fg-2);
+}
+
+@media (max-width: 900px) {
+  .mn-bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mn-bento-card--tall {
+    grid-row: span 1;
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .mn-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .mn-bento-card--tall,
+  .mn-bento-card--wide {
+    grid-column: span 1;
+  }
+
+  .mn-hero-card {
+    padding: 100px 18px 48px;
+    border-radius: 26px;
+  }
+
+  .mn-statement {
+    padding-top: 84px;
+  }
+}
+
+
+/* ============ below the hero =============================================
+ *
+ * Each beat gets its own shape. A page that argues attention is worth
+ * protecting cannot itself be nine identical eyebrow-title-paragraph-grid
+ * blocks — the reader stops seeing the sections and starts skimming, which is
+ * the exact behaviour the copy is about.
+ */
+
+/* --- the gap: two losses, side by side ------------------------------------ */
+
+.mn-lede {
+  margin: 18px 0 0;
+  font: 400 clamp(27px, 4.2vw, 44px) / 1.15 var(--mn-font-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* The second half is the turn in the sentence, so it takes its own line and
+ * steps back a tone rather than shouting twice. */
+.mn-lede span {
+  display: block;
+  color: var(--mn-fg-3);
+}
+
+.mn-losses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 44px;
+}
+
+.mn-loss {
+  padding: 30px 32px 34px;
+  border-radius: var(--mn-r);
+  background: var(--mn-bg);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-loss-tag {
+  display: block;
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mn-accent);
+}
+
+.mn-loss-title {
+  margin: 14px 0 0;
+  font: 400 clamp(21px, 2.6vw, 26px) / 1.25 var(--mn-font-serif);
+}
+
+.mn-loss p {
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* The sentence that turns the section from a diagnosis into a reason to keep
+ * reading. Ruled rather than boxed — it is an aside, not a card. */
+.mn-turn {
+  margin: 40px 0 0;
+  padding-left: 20px;
+  border-left: 2px solid var(--mn-accent);
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* --- what it is: four numbers, all the same size --------------------------
+ *
+ * Replaces a bento of mismatched tiles. The figures are the point and they
+ * only read as a set when nothing is competing to be the big one. */
+
+.mn-spec {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: 18px;
+  margin-top: 54px;
+  text-align: left;
+}
+
+.mn-spec-card {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 28px 28px;
+  border-radius: var(--mn-r);
+  background: var(--mn-bg);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-spec-figure {
+  margin: 0;
+  font: 400 44px/1 var(--mn-font-serif);
+  letter-spacing: -0.02em;
+}
+
+.mn-spec-figure small {
+  margin-left: 6px;
+  font: 400 13px/1 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+.mn-spec-label {
+  display: block;
+  margin-top: 16px;
+  font: 400 10px/1.4 var(--mn-font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.mn-spec-note {
+  margin: auto 0 0;
+  padding-top: 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* One filled card, because a row of four identical tiles is a table. */
+.mn-spec-card--accent {
+  background: var(--mn-accent);
+  color: var(--mn-page-top);
+  box-shadow: none;
+}
+
+.mn-spec-card--accent .mn-spec-figure small,
+.mn-spec-card--accent .mn-spec-label {
+  color: color-mix(in oklab, var(--mn-page-top) 66%, transparent);
+}
+
+.mn-spec-card--accent .mn-spec-note {
+  color: color-mix(in oklab, var(--mn-page-top) 82%, transparent);
+}
+
+/* --- the seven fields ----------------------------------------------------- */
+
+.mn-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0 34px;
+  margin-top: 46px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-field-def {
+  padding: 22px 0 4px;
+}
+
+.mn-field-def p {
+  margin: 9px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* --- explain: the mock leads, the copy follows ---------------------------- */
+
+.mn-split .mn-window-frame {
+  flex: 1 1 420px;
+  min-width: 340px;
+  margin-top: 0;
+}
+
+/* A basis rather than `flex: 1`, or the mock's intrinsic width wins the
+ * negotiation and the prose ends up in a 290px gutter. */
+.mn-explain-copy,
+.mn-history-copy {
+  flex: 0 1 384px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mn-explain-copy p,
+.mn-history-copy p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.mn-explain-test {
+  padding: 18px 20px;
+  border-left: 2px solid var(--mn-accent);
+  border-radius: 0 var(--mn-r-s) var(--mn-r-s) 0;
+  background: color-mix(in oklab, var(--mn-fg) 4%, transparent);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+}
+
+.mn-explain-test .mn-fact {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* --- history: a window with a search in it -------------------------------- */
+
+.mn-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--mn-hairline);
+  border-radius: 8px;
+  font: 400 12px/1 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+.mn-search span {
+  color: var(--mn-fg);
+}
+
+.mn-hist-row {
+  padding: 14px 0 2px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-hist-row:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.mn-hist-project {
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.mn-hist-row p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mn-hist-row .mn-fact {
+  display: block;
+  margin-top: 7px;
+}
+
+.mn-hist-row--quiet p {
+  color: var(--mn-fg-2);
+}
+
+/* A hit, drawn the way the app draws one. */
+.mn-window mark {
+  background: var(--mn-accent-wash);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* --- a row of small print, used twice ------------------------------------- */
+
+.mn-notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0 34px;
+  margin-top: 48px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-notes > div {
+  padding: 24px 0 4px;
+}
+
+.mn-notes p {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* --- games ---------------------------------------------------------------- */
+
+.mn-feature {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  margin-top: 42px;
+  padding: 32px;
+  border-radius: var(--mn-r);
+  background: var(--mn-bg);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-feature-copy {
+  flex: 1;
+  min-width: 260px;
+}
+
+.mn-feature-copy p {
+  margin: 12px 0 0;
+  text-wrap: pretty;
+}
+
+.mn-feature-copy .mn-serif {
+  font-size: 21px;
+  line-height: 1.4;
+}
+
+.mn-feature-copy .mn-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+}
+
+.mn-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.mn-tile {
+  padding: 24px 26px 26px;
+  border-radius: var(--mn-r);
+  background: var(--mn-bg);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-tile p {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* --- privacy: the one inverted block on the page --------------------------
+ *
+ * Contrast as navigation. A sceptical reader scrolls looking for this section
+ * specifically, so it is the one thing on the page that does not look like the
+ * rest of the page. */
+
+.mn-plate {
+  margin-top: 8px;
+  padding: 52px 54px 56px;
+  border-radius: 30px;
+  background: var(--mn-fg);
+  color: var(--mn-page-top);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-plate .mn-fact {
+  color: color-mix(in oklab, var(--mn-page-top) 58%, transparent);
+}
+
+.mn-plate-title {
+  margin: 14px 0 0;
+  font: 400 clamp(27px, 4vw, 34px) / 1.2 var(--mn-font-serif);
+  color: inherit;
+  text-wrap: balance;
+}
+
+.mn-plate-note {
+  margin: 16px 0 0;
+  max-width: 58ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in oklab, var(--mn-page-top) 76%, transparent);
+  text-wrap: pretty;
+}
+
+.mn-plate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 34px;
+  margin-top: 42px;
+  border-top: 1px solid color-mix(in oklab, var(--mn-page-top) 16%, transparent);
+}
+
+.mn-plate-grid > div {
+  padding: 26px 0 4px;
+}
+
+.mn-plate-grid p {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: color-mix(in oklab, var(--mn-page-top) 72%, transparent);
+  text-wrap: pretty;
+}
+
+/* --- install: three across, then the button ------------------------------- */
+
+.mn-install {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  gap: 0 34px;
+  margin-top: 42px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-install-step {
+  padding: 26px 0 4px;
+}
+
+.mn-install-step h3 {
+  margin: 12px 0 0;
+  font: 400 20px/1.3 var(--mn-font-serif);
+}
+
+.mn-install-step p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* The word "optional" is a label on the heading, not part of the sentence. */
+.mn-install-step h3 em {
+  margin-left: 8px;
+  font: 400 9.5px/1 var(--mn-font-ui);
+  font-style: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mn-accent);
+  vertical-align: middle;
+}
+
+.mn-install-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin-top: 44px;
+}
+
+/* The install one-liner.
+ *
+ * The only place on the page that asks to be copied rather than read, so it is
+ * the only place set at terminal scale in a box of its own. */
+.mn-oneliner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 14px 14px 22px;
+  border-radius: var(--mn-r-s);
+  border: 1px solid var(--mn-hairline);
+  background: var(--mn-code-bg);
+}
+
+.mn-oneliner code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* The copy button. Quiet until used; the tick and the accent are the receipt. */
+.mn-copy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--mn-hairline);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: 500 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mn-fg-2);
+  transition:
+    color 140ms ease-out,
+    border-color 140ms ease-out,
+    background-color 140ms ease-out;
+}
+
+.mn-copy:hover {
+  color: var(--mn-fg);
+  border-color: var(--mn-fg-3);
+}
+
+.mn-copy.is-copied {
+  color: var(--mn-accent);
+  border-color: color-mix(in oklab, var(--mn-accent) 45%, transparent);
+  background: color-mix(in oklab, var(--mn-accent) 10%, transparent);
+}
+
+.mn-oneliner code {
+  font: 400 clamp(12px, 1.5vw, 14.5px) / 1.6 var(--mn-font-mono);
+  white-space: nowrap;
+}
+
+/* ============ the reference's spine ====================================== */
+
+/* --- the numbers, directly under the hero --------------------------------
+ *
+ * Where herdr.dev puts stars, installs and plugin counts. Muninn has none of
+ * those and is not going to invent them on a page whose subject is not
+ * fabricating things, so the row states what the thing *is* instead. Same
+ * job: four hard facts before the argument starts. */
+.mn-stats-band {
+  padding-top: 56px;
+}
+
+.mn-spec--band {
+  margin-top: 0;
+}
+
+/* --- numbered section eyebrows -------------------------------------------
+ *
+ * The five things Muninn does, numbered so they read as one sequence rather
+ * than five unrelated sections. The number is the through-line; the rule is
+ * the reference's arrow, softened to match everything else here. */
+.mn-step-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mn-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--mn-fg-3);
+}
+
+.mn-step-eyebrow b {
+  font: 400 11px/1 var(--mn-font-mono);
+  letter-spacing: 0.06em;
+  color: var(--mn-accent);
+}
+
+.mn-step-eyebrow i {
+  width: 26px;
+  height: 1px;
+  background: color-mix(in oklab, var(--mn-accent) 55%, transparent);
+}
+
+/* --- the closing call to action ------------------------------------------
+ *
+ * The one place the page is allowed to ask twice. Centred, unlike everything
+ * above it, because it is the end of the argument rather than part of it —
+ * and because nobody should have to scroll back up for the command. */
+.mn-closer {
+  padding: 86px 0 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mn-closer-title {
+  margin: 0;
+  font: 400 clamp(30px, 4.6vw, 52px) / 1.12 var(--mn-font-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.mn-closer-note {
+  margin: 22px 0 0;
+  max-width: 56ch;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.mn-oneliner--closer {
+  margin-top: 34px;
+  width: 100%;
+  max-width: 640px;
+  text-align: left;
+}
+
+.mn-oneliner--closer code,
+.mn-oneliner--hero code {
+  white-space: nowrap;
+}
+
+.mn-closer-fine {
+  margin: 18px 0 0;
+  font: 400 10px/1.8 var(--mn-font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+/* Three things true at once, not three steps in order — so they are marked
+ * rather than numbered. The section already carries the only number here. */
+.mn-step-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--mn-accent) 70%, transparent);
+}
+
+/* ============ the herdr restructure ====================================== */
+
+/* The command in the hero. The one thing on the page meant to be copied. */
+.mn-hero-cmd {
+  margin-top: 38px;
+  width: 100%;
+  max-width: 620px;
+}
+
+.mn-oneliner--hero {
+  text-align: left;
+}
+
+.mn-hero-fine {
+  margin: 14px 0 0;
+  font: 400 12.5px/1.6 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+/* --- the demo stage -------------------------------------------------------
+ *
+ * The reference gives the product one big full-width moment before arguing a
+ * single feature. Muninn's product is two windows, so the stage is the two of
+ * them side by side at full size, with a lowercase mono caption in the
+ * reference's voice. */
+.mn-demo {
+  margin-top: 96px;
+}
+
+.mn-demo-caption {
+  margin: 0 0 18px;
+  font: 400 12px/1 var(--mn-font-mono);
+  letter-spacing: 0.08em;
+  color: var(--mn-fg-3);
+  text-align: center;
+}
+
+.mn-demo-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 64px 40px 72px;
+  border-radius: 30px;
+  background: var(--mn-bg);
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+/* The base layer: the work, pushed off-centre to leave the corner free —
+ * because that is the composition the app actually makes on a screen. */
+.mn-demo-stage .mn-window-frame {
+  margin: 0;
+  flex: 0 1 640px;
+  min-width: 0;
+  transform: translateX(-96px);
+}
+
+/* The panel, arriving over it. Top-right, overlapping the window's corner,
+ * lifted above it in the stacking order — the summary always wins. */
+.mn-demo-stage .mn-panel-frame {
+  position: absolute;
+  z-index: 1;
+  top: 34px;
+  right: clamp(8px, 6%, 84px);
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  /* No room for an overlap — a covered mock reads as a rendering bug. */
+  .mn-demo-stage {
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 40px 20px;
+  }
+  .mn-demo-stage .mn-window-frame {
+    transform: none;
+  }
+  .mn-demo-stage .mn-panel-frame {
+    position: static;
+  }
+}
+
+.mn-demo-note {
+  margin: 22px auto 0;
+  max-width: 64ch;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--mn-fg-2);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* --- the strips -----------------------------------------------------------
+ *
+ * Five features, one thought each, centred and compact — the reference's
+ * numbered items rather than five sprawling sections. The demo above already
+ * made the visual case; these only say why. */
+.mn-strips {
+  margin-top: 40px;
+}
+
+.mn-strip {
+  padding: 84px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mn-strip + .mn-strip {
+  margin-top: 76px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-strip-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 400 10px/1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.mn-strip-eyebrow b {
+  font: 400 11px/1 var(--mn-font-mono);
+  letter-spacing: 0.06em;
+  color: var(--mn-accent);
+}
+
+.mn-strip-eyebrow i {
+  width: 26px;
+  height: 1px;
+  background: color-mix(in oklab, var(--mn-accent) 55%, transparent);
+}
+
+.mn-strip-title {
+  margin: 18px 0 0;
+  font: 400 clamp(27px, 4.4vw, 44px) / 1.15 var(--mn-font-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* The bold keyword, the reference's device, in Muninn's soft accent. */
+.mn-strip-title em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--mn-accent) 55%, var(--mn-fg));
+}
+
+.mn-strip-note {
+  margin: 20px 0 0;
+  max-width: 66ch;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+/* ============ real screenshots =========================================== */
+
+/* A screenshot in the page's frame language. The window captures carry their
+ * own native shadow in the alpha, so those get no frame at all — framing a
+ * shadow gives it two edges. The full-bleed captures (wallpaper, games) get
+ * the rounded frame the shadow would have given them. */
+.mn-shot {
+  margin: 0;
+  text-align: center;
+}
+
+.mn-shot img {
+  max-width: 100%;
+  height: auto;
+}
+
+.mn-shot figcaption {
+  margin-top: 12px;
+}
+
+/* Opaque captures: round them and let them cast the page's own shadow. */
+.mn-shot--framed img,
+.mn-shot--panel img {
+  border-radius: 14px;
+  box-shadow: var(--mn-shadow);
+}
+
+/* The demo stage, with photographs in it. The window shot is the base; the
+ * corner shot sits beside it at its natural smaller size. */
+.mn-demo-stage--shots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  transform: none;
+}
+
+.mn-demo-stage--shots .mn-shot--window {
+  flex: 1 1 520px;
+  min-width: 320px;
+  max-width: 660px;
+}
+
+.mn-demo-stage--shots .mn-shot--panel {
+  flex: 0 1 360px;
+  min-width: 280px;
+}
+
+/* Two screenshots abreast, inside a strip's centred column. */
+.mn-shot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 26px;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.mn-shot-row .mn-shot {
+  flex: 1 1 300px;
+  max-width: 420px;
+}
+
+/* The games are wide windows; give the pair the full column. */
+.mn-shot-row--wide .mn-shot {
+  flex: 1 1 380px;
+  max-width: 520px;
+}
+
+.mn-shot--single {
+  margin-top: 40px;
+  width: 100%;
+}
+
+.mn-shot--single img {
+  max-width: 760px;
+}
+
+/* --- click-to-zoom --------------------------------------------------------
+ *
+ * Every screenshot invites the click; the overlay is the same file at the
+ * size it was actually captured at. Dimmed and blurred behind, closed by a
+ * click anywhere, Esc, or the one visible control. */
+.mn-shot img {
+  cursor: zoom-in;
+}
+
+.mn-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  background: color-mix(in oklab, var(--mn-page-top) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  cursor: zoom-out;
+  animation: mn-lightbox-in 160ms ease-out;
+}
+
+@keyframes mn-lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mn-lightbox img {
+  max-width: min(1400px, 94vw);
+  max-height: 86vh;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--mn-glow-soft);
+}
+
+.mn-lightbox-caption {
+  margin: 0;
+  max-width: 70ch;
+  font: 400 13px/1.5 var(--mn-font-ui);
+  color: var(--mn-fg-2);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.mn-lightbox-close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--mn-hairline);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--mn-fg) 5%, transparent);
+  color: var(--mn-fg-2);
+  cursor: pointer;
+}
+
+.mn-lightbox-close:hover {
+  color: var(--mn-fg);
+  border-color: var(--mn-fg-3);
+}
+
+/* --- the contribution section ---------------------------------------------
+ *
+ * Laid out like a strip — same eyebrow, same centred title — because it is
+ * the sixth thing the page says, not a different kind of page. The tiles
+ * carry the four seams the codebase deliberately leaves open. */
+.mn-contrib {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mn-contrib .mn-tiles {
+  margin-top: 44px;
+  width: 100%;
+  text-align: left;
+}
+
+.mn-contrib .mn-install-foot {
+  justify-content: center;
+  margin-top: 40px;
+}
+
+/* --- the contribute button, bottom-right ----------------------------------
+ *
+ * On screen the whole time, and allowed to be the loudest chrome on the page:
+ * a landing page for an open-source tool has exactly two jobs, and the other
+ * one already owns the hero. The breathe is the panel's own idle animation,
+ * borrowed so the button reads as alive rather than parked. */
+.mn-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font: 600 12px/1 var(--mn-font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mn-fg);
+  animation: mn-fab-glow 2.6s ease-in-out infinite;
+}
+
+/* A real glow, not the panel's murmur: the accent thrown as light, swelling
+ * and settling. The one element on the page allowed to do this. */
+@keyframes mn-fab-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0.5px var(--mn-glass-spec),
+      0 0 0 0 color-mix(in oklab, var(--mn-accent) 34%, transparent),
+      0 0 18px 2px color-mix(in oklab, var(--mn-accent) 26%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0.5px var(--mn-glass-spec),
+      0 0 0 5px color-mix(in oklab, var(--mn-accent) 12%, transparent),
+      0 0 34px 8px color-mix(in oklab, var(--mn-accent) 40%, transparent);
+  }
+}
+
+.mn-fab svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.mn-fab:hover,
+.mn-fab.is-open {
+  animation: none;
+  box-shadow:
+    inset 0 1px 0.5px var(--mn-glass-spec),
+    0 0 0 5px color-mix(in oklab, var(--mn-accent) 14%, transparent),
+    0 0 38px 10px color-mix(in oklab, var(--mn-accent) 45%, transparent);
+}
+
+/* The card rises out of the button's corner. */
+.mn-fab-card {
+  position: fixed;
+  right: 22px;
+  bottom: 86px;
+  z-index: 55;
+  width: min(400px, calc(100vw - 44px));
+  padding: 26px 28px 24px;
+  border-radius: 22px;
+  border: 1px solid var(--mn-hairline);
+  background: var(--mn-bg);
+  box-shadow: var(--mn-glow-soft);
+  transform-origin: bottom right;
+  animation: mn-fab-rise 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes mn-fab-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mn-fab-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.mn-fab-sub {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.mn-fab-sub strong {
+  font-weight: 600;
+  color: var(--mn-fg);
+}
+
+.mn-fab-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.mn-fab-list li {
+  padding: 12px 0;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.mn-fab-list p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+}
+
+.mn-fab-cta {
+  margin-top: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+.mn-fab-fine {
+  margin: 12px 0 0;
+  text-align: center;
+  display: block;
+}
+
+@media (max-width: 560px) {
+  /* The label yields to the thumb-sized icon on phones. */
+  .mn-fab span {
+    display: none;
+  }
+  .mn-fab {
+    padding: 14px;
+  }
+}

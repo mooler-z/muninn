@@ -1,0 +1,41 @@
+# Build output
+/target/
+/dist/
+/build/
+node_modules/
+*.app
+
+# Captured hook payloads from M0 experiments — these contain real working
+# directories and full agent output. Never commit them.
+/captures/
+*.payload.json
+spool/
+
+# A scratch repo for driving Muninn with a real agent. It carries hook config
+# with absolute paths and whatever the agent happens to write there.
+/test/
+
+# Local config
+.env
+.env.local
+*.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Built artefacts staged for the site. The install script is source and is
+# committed; the zips it serves are outputs and are not.
+site/public/download/
+src-tauri/binaries/
+
+# Per-machine files that never belong in a shared tree.
+.claude/
+site/deploy/DEPLOY.md
+nohup.out
+*.log

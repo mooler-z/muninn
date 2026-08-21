@@ -1,0 +1,400 @@
+/* ============ The details window ============
+ *
+ * The same surface, tokens and registers as the panel — see panel.css. What is
+ * different is only that there is room: nothing is capped, nothing collapsed,
+ * and the claimed/observed distinction gets stated in words as well as in type.
+ *
+ * Two columns, because this window is half the screen wide. One column of prose
+ * across that width is either an unreadable line length or a narrow ribbon with
+ * a desert beside it, and it buries the provenance below a fold nobody reaches.
+ */
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  /* Transparent window with the surface drawn here, so the rounded corners are
+   * real rather than a rectangle with painted corners.
+   *
+   * The padding is room for the card's shadow to fall into. A shadow drawn past
+   * the window edge is not faded off, it is cut off — the same reason the panel
+   * carries a margin. details.rs grows the window by the same amount, so the
+   * card itself still measures half the screen. */
+  background: transparent;
+  color: var(--mn-fg);
+  padding: var(--mn-shadow-pad);
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--mn-bg);
+  border: var(--mn-border);
+  border-radius: 16px;
+  overflow: hidden;
+  /* The same slow breath as the panel, but against --mn-glow-soft rather than
+   * the full glow. This surface is many times the panel's area, and the same
+   * amplitude across it stopped reading as a lift and started reading as a haze
+   * around the whole window.
+   *
+   * No mn-appear here: this window is opened deliberately, and a window that
+   * rises and settles under a click meant to open it reads as lag. */
+  box-shadow: var(--mn-shadow);
+  animation:
+    dt-fade 320ms ease-out both,
+    dt-breathe 6s ease-in-out 320ms infinite;
+}
+
+@keyframes dt-breathe {
+  0%,
+  100% {
+    box-shadow: var(--mn-shadow);
+  }
+  50% {
+    box-shadow: var(--mn-glow-soft);
+  }
+}
+
+@keyframes dt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- chrome ---------------------------------------------------------------
+ *
+ * There is no title bar. The window carries no controls along the top at all —
+ * identity leads the account itself, and the only control is the close button
+ * in the bottom-right corner, where the panel keeps its own.
+ */
+
+#root {
+  position: relative;
+}
+
+/* A window with no bar has nothing to grab. This strip is invisible and sits
+ * above the content, so the window can still be moved. */
+.dt-drag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  z-index: 2;
+  -webkit-app-region: drag;
+}
+
+.dt-close {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  z-index: 3;
+  display: flex;
+  padding: 7px;
+  border-radius: 999px;
+  /* No backdrop of its own: the button is glass and does its own blurring, and
+   * a second translucent layer behind it only muddied what showed through. */
+}
+
+/* --- identity ------------------------------------------------------------- */
+
+.dt-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+/* Masked and tinted, as in the panel — see .mn-logo. */
+.dt-logo {
+  flex: none;
+  display: block;
+  height: 42px;
+  aspect-ratio: 139 / 186;
+  color: var(--mn-fg-2);
+  background: currentColor;
+  -webkit-mask-image: url("../../../assets/muninn-raven.png");
+  mask-image: url("../../../assets/muninn-raven.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.dt-head-id {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dt-project {
+  font: 500 12.5px/1 var(--mn-font-ui);
+  letter-spacing: 0.2em;
+  color: var(--mn-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-branch {
+  font: 400 11px/1.3 var(--mn-font-mono);
+  color: var(--mn-fg-3);
+}
+
+/* The queue pager closes the provenance rail. The rail is sticky, so the
+ * control stays put while the summary scrolls past it — which is the same
+ * reason the panel keeps its pager above the content rather than below. */
+.dt-pager {
+  display: flex;
+  justify-content: center;
+  padding-top: 13px;
+  margin-top: 5px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+/* --- layout --------------------------------------------------------------- */
+
+.dt-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Opened deliberately and meant to be read from and copied out of, unlike
+   * the panel. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.dt-columns {
+  display: grid;
+  /* The account gets the room; the facts get a fixed, narrow rail. */
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 40px;
+  padding: 34px 30px 76px;
+  align-items: start;
+}
+
+/* Below roughly 760pt the rail has nowhere to go, so it drops underneath. */
+@media (max-width: 760px) {
+  .dt-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .dt-side {
+    position: static;
+  }
+}
+
+.dt-main {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+  max-width: 74ch;
+}
+
+/* --- the account ---------------------------------------------------------- */
+
+.dt-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--mn-fg-2);
+  font: 500 11px/1 var(--mn-font-ui);
+  letter-spacing: 0.3em;
+}
+
+/* Colour only where the user is the blocker — as on the panel. */
+.dt-status--needed {
+  color: var(--mn-accent);
+}
+
+.dt-headline {
+  margin: 0;
+  font: 300 27px/1.35 var(--mn-font-voice);
+  color: var(--mn-fg);
+  text-wrap: pretty;
+}
+
+.dt-block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 22px;
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.dt-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 400 var(--mn-fs-label) / 1 var(--mn-font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.dt-value {
+  margin: 0;
+  font: 400 15.5px/1.65 var(--mn-font-voice);
+  color: var(--mn-fg);
+  text-wrap: pretty;
+}
+
+/* What was asked for. Set as a quotation because it is someone else's words —
+ * the same reasoning that puts `verified` in quotes. */
+.dt-prompt {
+  margin: 0;
+  padding: 2px 0 2px 15px;
+  border-left: 2px solid color-mix(in oklab, var(--mn-accent) 45%, transparent);
+  font: 400 15px/1.6 var(--mn-font-voice);
+  color: var(--mn-fg-2);
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+
+/* Empty until the transcript has been read, so it must not leave a rule and a
+ * gap behind in the meantime. */
+.dt-asked:empty {
+  display: none;
+  padding: 0;
+  border: 0;
+}
+
+/* The honesty rule, said out loud. */
+.dt-caveat {
+  margin: 0;
+  font: 400 var(--mn-fs-note) / 1.5 var(--mn-font-ui);
+  color: var(--mn-fg-3);
+}
+
+.dt-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.dt-changed {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mn-fg-2);
+}
+
+.dt-mono {
+  font: 400 var(--mn-fs-note) / 1.5 var(--mn-font-mono);
+  color: var(--mn-fg);
+  background: var(--mn-code-bg);
+  border-radius: 5px;
+  padding: 2px 6px;
+  word-break: break-all;
+}
+
+.dt-raw {
+  font-size: 14.5px;
+}
+
+.dt-empty {
+  margin: 0;
+  font: 300 19px/1.5 var(--mn-font-voice);
+  color: var(--mn-fg-2);
+}
+
+/* --- provenance rail ------------------------------------------------------ */
+
+.dt-side {
+  position: sticky;
+  top: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--mn-hairline);
+  background: color-mix(in oklab, var(--mn-fg-3) 7%, transparent);
+  min-width: 0;
+}
+
+.dt-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 0;
+  min-width: 0;
+}
+
+.dt-fact + .dt-fact {
+  border-top: 1px solid var(--mn-hairline);
+}
+
+.dt-fact-key {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 400 9.5px/1 var(--mn-font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mn-fg-3);
+}
+
+.dt-fact-value {
+  font-size: var(--mn-fs-note);
+  line-height: 1.5;
+  color: var(--mn-fg-2);
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* --- arrival --------------------------------------------------------------
+ *
+ * The window is centred, so it grows from its middle rather than from a
+ * corner. Transform and opacity only: see the note on `.mn-panel` in
+ * panel.css for why this is not a height animation.
+ */
+.dt-opening {
+  animation: dt-open 750ms cubic-bezier(0.22, 1.12, 0.36, 1) both;
+}
+
+@keyframes dt-open {
+  0% {
+    opacity: 0;
+    transform: translateY(-38px);
+  }
+  /* Opaque before it lands, so it is readable for most of the fall. */
+  32% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-opening {
+    animation: none;
+  }
+}
+
+/* The search term, carried over from the history window. Same accent wash as
+ * the list it was found in, so a match looks the same wherever you meet it. */
+.dt-mark {
+  background: var(--mn-accent-wash);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--mn-accent) 35%, transparent);
+}
