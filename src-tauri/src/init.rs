@@ -17,7 +17,7 @@
 //! that reads like "rewrite the file" is a bug — someone's `settings.json` is
 //! hundreds of lines of permissions they accumulated over months.
 
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::path::{Path, PathBuf};
 
 use serde_json::{json, Value};
@@ -69,6 +69,34 @@ struct Options {
     launch: bool,
 }
 
+/// The same palette as install.sh, and the same rules: only when stdout is a
+/// terminal, and never when NO_COLOR is set. The installer pipes this output
+/// straight to the user's tty, so the two halves read as one program.
+struct Ink {
+    accent: &'static str,
+    dim: &'static str,
+    bold: &'static str,
+    red: &'static str,
+    reset: &'static str,
+}
+
+fn ink() -> Ink {
+    let on = std::io::stdout().is_terminal()
+        && std::env::var_os("NO_COLOR").is_none()
+        && std::env::var("TERM").map(|t| t != "dumb").unwrap_or(true);
+    if on {
+        Ink {
+            accent: "[38;5;209m",
+            dim: "[2m",
+            bold: "[1m",
+            red: "[31m",
+            reset: "[0m",
+        }
+    } else {
+        Ink { accent: "", dim: "", bold: "", red: "", reset: "" }
+    }
+}
+
 /// What one step did. Printed, and used to decide the exit code.
 enum Did {
     Created(String),
@@ -78,12 +106,13 @@ enum Did {
 }
 
 impl Did {
-    fn line(&self) -> String {
+    fn line(&self, ink: &Ink) -> String {
+        let Ink { accent, dim, red, reset, .. } = ink;
         match self {
-            Did::Created(w) => format!("  created    {w}"),
-            Did::Updated(w) => format!("  updated    {w}"),
-            Did::Unchanged(w) => format!("  unchanged  {w}"),
-            Did::Failed(w) => format!("  FAILED     {w}"),
+            Did::Created(w) => format!("  {accent}✓ created{reset}    {w}"),
+            Did::Updated(w) => format!("  {accent}✓ updated{reset}    {w}"),
+            Did::Unchanged(w) => format!("  {dim}· unchanged{reset}  {w}"),
+            Did::Failed(w) => format!("  {red}✗ FAILED{reset}     {w}"),
         }
     }
 }
@@ -167,9 +196,17 @@ fn run(options: Options) -> i32 {
         return 1;
     }
 
-    println!("muninn init  {}", options.dir.display());
+    let ink = ink();
+    println!(
+        "{}muninn init{}  {}{}{}",
+        ink.bold,
+        ink.reset,
+        ink.dim,
+        options.dir.display(),
+        ink.reset
+    );
     if options.dry_run {
-        println!("             (dry run — nothing will be written)");
+        println!("             {}(dry run — nothing will be written){}", ink.dim, ink.reset);
     }
     println!();
 
@@ -180,7 +217,7 @@ fn run(options: Options) -> i32 {
     ];
 
     for step in &steps {
-        println!("{}", step.line());
+        println!("{}", step.line(&ink));
     }
 
     let failed = steps.iter().any(|s| matches!(s, Did::Failed(_)));
@@ -195,9 +232,8 @@ fn run(options: Options) -> i32 {
     }
 
     println!(
-        "\nDone. Your agent will knock when it finishes a turn.\n\
-         Commit MUNINN.md and the CLAUDE.md block — they describe the project,\n\
-         not this machine, so they are useful to everyone who works on it."
+        "\n{}Done.{} Your agent will knock when it finishes a turn.\n{}Commit MUNINN.md and the CLAUDE.md block — they describe the project,\nnot this machine, so they are useful to everyone who works on it.{}",
+        ink.accent, ink.reset, ink.dim, ink.reset
     );
 
     if options.launch {
