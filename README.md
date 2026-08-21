@@ -83,7 +83,7 @@ contributions:
 | **Another CLI agent** (Codex, Cursor, Gemini, Aider…) | Everything source-specific is one file: `src-tauri/src/normalise.rs`. [docs/integrations/codex.md](docs/integrations/codex.md) is written and waiting on verification |
 | **Another OS** | The core is Tauri + Rust; the macOS-only code is fenced and labelled. Linux first, Windows next — see [docs/roadmap.md](docs/roadmap.md) |
 | **Another game** | Self-contained TypeScript modules in `ui/src/` with a tiny contract: draw, pause when told, snapshot once a second |
-| **The thing itself** | Panel, sounds, history, installer, site — [docs/design-principles.md](docs/design-principles.md) is the referee for what counts as a fix |
+| **The thing itself** | Panel, sounds, history, installer, site — [docs/ui-design-rules.md](docs/ui-design-rules.md) is the referee for what counts as a fix |
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
 [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -116,6 +116,7 @@ end in `ui/` and the landing site in `site/`.
 | [MUNINN.md](MUNINN.md) | The summary contract users drop into their projects |
 | [docs/product-brief.md](docs/product-brief.md) | Who it is for, what it must do |
 | [docs/design-principles.md](docs/design-principles.md) | Calm-software rules the UI must obey |
+| [docs/ui-design-rules.md](docs/ui-design-rules.md) | The referee for visual changes — what a contributor's diff must do |
 | [docs/summary-contract.md](docs/summary-contract.md) | The structured block agents emit |
 | [docs/integrations/claude-code.md](docs/integrations/claude-code.md) | Hook events, payload schema, setup |
 | [docs/integrations/codex.md](docs/integrations/codex.md) | Codex CLI notifications (unverified) |

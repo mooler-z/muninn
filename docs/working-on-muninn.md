@@ -196,6 +196,13 @@ docs/decisions/         ADRs — several obvious approaches already rejected
 
 ---
 
+## 6b. Driving the windows
+
+`python3 tools/popups.py` — a numbered menu that fires every window through the
+real receiver: panel states, Details, History, the corner notices (pinned, so
+they can be screenshotted), and the game window. It is faster than any of the
+curl incantations above and stages believable content.
+
 ## 7. Open flags
 
 - **Stockfish is GPL-3.** It is bundled for the chess game. Shipping a

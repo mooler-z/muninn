@@ -79,6 +79,23 @@ A window that appears, renders, plays a sound, and gets out of the way. See
 
 ---
 
+## What grew around the three pieces
+
+The shim → receiver → panel spine above is still the whole story for a
+summary's journey. Around it, the app gained:
+
+| Piece | File | One line |
+|---|---|---|
+| The waiting window | `src-tauri/src/waiting.rs` | A game while the turn runs; per-session tracking so two agents share one window |
+| Game saves | `src-tauri/src/games.rs` | One snapshot file per game, allowlisted names |
+| Details / History windows | `details.rs`, `history_window.rs` | The long read and the last fifty turns |
+| Prompt capture | `transcript.rs` | Reads the prompt *after* the panel is up, never before |
+| Network notice | `net.rs`, `notice.rs` | Detects a dead connection without sending a packet |
+| `muninn init` | `init.rs` | Installer/updater as a subcommand; merges hooks, writes MUNINN.md |
+
+None of these sit on the stop path. The 500 ms promise belongs to the shim
+alone, and nothing added since touches it.
+
 ## Why not scrape the terminal
 
 Because we do not have to. Claude Code's `Stop` hook hands over

@@ -9,7 +9,12 @@ The sound is the product's first impression and the easiest thing to get wrong.
 
 - Soft attack, short, low-mid frequency, quiet by default. On macOS,
   `/System/Library/Sounds/Tink.aiff` is roughly the target character.
-- No rising alarm shapes, no repeats, no escalation.
+- No rising alarm shapes, no escalation. The finish knock is three *identical*
+  hits, evenly spaced — one short tone is easy to miss from another room, which
+  is exactly the situation this product is for. What keeps that inside this
+  principle is that nothing changes between hits: same sound, same volume. It
+  reads as one notification with three beats, never as an alarm getting more
+  insistent. `sound.rs` enforces the ceiling at compile time.
 - A different, *quieter* sound for `needs-input` than for `completed` — being
   asked a question is less final than being finished.
 - Silent hours by default, and a mute that is one click, never buried.
@@ -54,8 +59,10 @@ A missing summary says "finished, no summary" — never a fabricated one.
 - Status colour never alone: always paired with an icon and a word, for
   colour-blind users and for glanceability.
 - Monospace only for paths, commands and code fragments.
-- No progress bars, no spinners, no animated counters. Nothing is happening —
-  that is the point. The work is already done.
+- No progress bars, no spinners, no animated counters on the panel. Nothing is
+  happening — that is the point. The work is already done.
+- The waiting window is the one deliberate exception to stillness, and it is
+  governed instead by §9.
 
 ## 7. Multiple agents, one queue
 
@@ -69,6 +76,19 @@ It idles all day in a menu bar. Idle CPU should be indistinguishable from zero,
 and memory should not embarrass itself next to a text editor. This is a
 constraint on the stack, not a nice-to-have — see
 [ADR-0003](decisions/0003-tauri-over-electron.md).
+
+## 9. The games are rest, not appetite
+
+The waiting window exists to hold one thread of attention, which makes it the
+easiest place to betray everything above. The rules that keep it honest:
+
+- Off by default, and nothing opens until a turn has run long enough to be a
+  wait (most turns finish before the threshold).
+- The summary always wins the screen. When the turn ends, the game pauses,
+  banks its state, and yields — nothing has to be dismissed first.
+- No score kept across sessions, no streaks, no daily anything. A game that
+  wants the user back tomorrow is the attention problem again, in a nicer coat.
+- Progress saves once a second, so the agent finishing never costs a run.
 
 ## Anti-goals
 

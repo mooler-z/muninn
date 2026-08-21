@@ -3,6 +3,15 @@
 Ordered by what de-risks the most, earliest. Each milestone should be usable by
 the author before the next begins.
 
+**Where it stands:** M0 through M3 are done and in daily use. M4 is done except
+signing and notarisation — the installer (`install.sh` → `muninn init`) merges
+hooks and teaches the format, but the build is unsigned, so `curl | sh` is the
+smooth path and a browser download needs the right-click-open dance. Built
+beyond the original plan along the way: the waiting-window games, the Details
+and History windows, prompt capture, the network notice, and the landing site.
+M5 is open and is the best first contribution — see
+[integrations/codex.md](integrations/codex.md).
+
 ## M0 — Prove the payload (half a day)
 
 No UI. A shell script registered as the `Stop` hook that appends the JSON to a
@@ -43,6 +52,9 @@ At this point the author uses it daily and stops thinking about it.
 Signed and notarised macOS build. An installer that merges the hook into
 `settings.json` without destroying existing hooks, and offers to append the
 prompt fragment. Uninstall that cleanly reverses both.
+
+*Done except signing/notarisation, which costs an Apple Developer account.
+The installer exists as `muninn init`; uninstall does not yet.*
 
 ## M5 — Second agent
 

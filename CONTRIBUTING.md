@@ -10,6 +10,9 @@ Read in this order:
 4. [docs/decisions/](docs/decisions/) — why they fit that way
 
 [AGENTS.md](AGENTS.md) carries the hard rules; they apply to humans equally.
+If you are touching anything visible, read
+[docs/ui-design-rules.md](docs/ui-design-rules.md) first — it is the referee
+for what counts as a fix versus a regression.
 
 ## Development setup
 
@@ -36,15 +39,22 @@ echo '{"cwd":"'"$PWD"'","last_assistant_message":"```muninn\ndone: Hello\n```"}'
 there in light and dark, from fixtures, without an agent or the Rust side —
 which is the fastest way to compare against the design.
 
+### Putting any window on screen
+
+With the app running, `python3 tools/popups.py` gives you a numbered menu that
+triggers every window through the real receiver: each panel state, Details,
+History, both corner notices, and the game window. Pick a number, look, repeat.
+
 ### Layout
 
 | Path | What lives there |
 |---|---|
 | `crates/muninn-core` | The event shape and the summary parser |
 | `crates/muninn-forward` | The shim. No dependencies; keep it that way |
-| `src-tauri/src` | Receiver, normaliser, queue, panel, sound, tray |
-| `ui/src` | The panel frontend. Vanilla TS, no framework |
-| `tools/` | M0 capture scripts and the icon generator |
+| `src-tauri/src` | Receiver, normaliser, queue, panel, sound, tray — plus `waiting.rs` (the game window), `games.rs` (saves), `init.rs` (`muninn init`), `net.rs`/`notice.rs` (the network notice), and the Details/History windows |
+| `ui/src` | All window frontends and the games. Vanilla TS, no framework |
+| `site/` | The landing page and admin portal. Next.js, deliberately separate |
+| `tools/` | `popups.py` (drive every window), `build-shim.sh`, capture scripts, the icon generator |
 
 ### Tests
 
@@ -61,6 +71,10 @@ The ones worth knowing about before you change anything:
 - `crates/muninn-core/tests/summary_parsing.rs` — mostly malformed input, because
   the raw fallback is the path that has to hold.
 - `src-tauri/src/receiver.rs` — the ADR-0005 checks, including the browser case.
+- `src-tauri/src/waiting.rs` — two agents sharing one game window without
+  stealing it from each other.
+- `src-tauri/src/init.rs` — the settings-merge rules: someone's accumulated
+  `settings.json` must survive `muninn init` byte-for-byte except our one key.
 
 ### Icons
 

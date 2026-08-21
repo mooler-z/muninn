@@ -63,10 +63,15 @@ The moat, such as it is, is the [summary contract](summary-contract.md): the
 value comes from shaping the agent's output at the source, which a passive
 monitor cannot do.
 
-## Open questions
+## Questions that were open, and how they closed
 
-- Does the panel appear automatically, or does the sound announce and the user
-  opens it? (Leaning: appears, but never steals focus.)
-- Is history worth keeping beyond the current day?
-- Should `blocked` escalate — a second, louder sound if unacknowledged for ten
-  minutes? Tempting, and in tension with "never startle".
+- *Does the panel appear automatically?* Yes — it appears without stealing
+  focus, and waits until seen. The premise is that the user is not at the desk;
+  a sound-then-open flow assumes they are.
+- *Is history worth keeping beyond the current day?* Yes. The last fifty turns,
+  each with the prompt that caused it, searchable with project names ranked
+  first. "When did this start going wrong" turned out to be the question users
+  actually have.
+- *Should `blocked` escalate?* No. It was tempting and it lost to "never
+  startle": escalation is an alarm by instalments. `blocked` takes the headline
+  slot and the accent instead — louder placement, not louder sound.

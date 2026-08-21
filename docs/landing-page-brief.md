@@ -1,3 +1,7 @@
+> **Historical.** This brief fed the first version of the landing page. The
+> page has since been rebuilt several times and this file is kept as design
+> archaeology, not as a spec — `site/` is the truth.
+
 # Muninn — landing page brief
 
 Everything needed to design and build a marketing site for Muninn, without

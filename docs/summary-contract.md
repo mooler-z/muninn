@@ -144,7 +144,9 @@ whole message to fall back on.
 
 ## Asking the agent to comply
 
-Muninn ships this fragment for users to paste into `CLAUDE.md` / `AGENTS.md`:
+Muninn ships this as [MUNINN.md](../MUNINN.md) — `muninn init` drops it into a
+project and points `CLAUDE.md` at it in one delimited line. The fragment below
+is the same contract in paste-able form, for anyone wiring it by hand:
 
 ```markdown
 ## Closing summary

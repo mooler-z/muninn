@@ -66,35 +66,44 @@ Matchers observed:
 
 ## Setup
 
-In `~/.claude/settings.json` (user-wide) or `.claude/settings.json` (per
-project):
+The supported path is one command — it merges into `~/.claude/settings.json`
+without touching anything already there:
+
+```sh
+muninn init
+```
+
+It registers three events, all pointing at the bundled shim:
+
+| Event | `--kind` | What Muninn does with it |
+|---|---|---|
+| `UserPromptSubmit` | `started` | Arms the waiting window; never queued |
+| `Stop` | `completed` | The summary — panel, sound, history |
+| `Notification` | `needs-input` | The quieter ask |
+
+By hand, the equivalent block (in `~/.claude/settings.json` user-wide, or
+`.claude/settings.json` per project):
 
 ```json
 {
   "hooks": {
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "/Applications/Muninn.app/Contents/MacOS/muninn-forward --source claude-code --kind started" }] }
+    ],
     "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "muninn-forward --source claude-code" }
-        ]
-      }
+      { "matcher": "", "hooks": [{ "type": "command", "command": "/Applications/Muninn.app/Contents/MacOS/muninn-forward --source claude-code --kind completed" }] }
     ],
     "Notification": [
-      {
-        "matcher": "permission_prompt",
-        "hooks": [
-          { "type": "command", "command": "muninn-forward --source claude-code --kind needs-input" }
-        ]
-      }
+      { "matcher": "", "hooks": [{ "type": "command", "command": "/Applications/Muninn.app/Contents/MacOS/muninn-forward --source claude-code --kind needs-input" }] }
     ]
   }
 }
 ```
 
-`matcher` may be omitted (or `""`) to match everything.
-
-Muninn's installer writes this block, merging rather than replacing — users have
-their own hooks and clobbering them is unacceptable.
+`matcher` may be omitted (or `""`) to match everything. `muninn init` merges
+rather than replaces — users have their own hooks and clobbering them is
+unacceptable — and re-running it repoints an existing entry instead of
+duplicating it, so it is also how you fix a moved install.
 
 ## Hook contract we must respect
 

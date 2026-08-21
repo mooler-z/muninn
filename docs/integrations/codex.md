@@ -1,5 +1,11 @@
 # Integration: Codex CLI
 
+> **Status: UNVERIFIED — and the best first contribution to this repo.**
+> The shim already accepts `--source codex`; everything source-specific on the
+> app side is one function in `src-tauri/src/normalise.rs`. Verifying the
+> payload shape below against a current Codex build and wiring the field names
+> is the whole task.
+>
 > **Status: UNVERIFIED.** Everything below needs confirming against the current
 > Codex CLI before any code is written. It is recorded as a starting point, not
 > as fact. Do not implement from this page alone.
