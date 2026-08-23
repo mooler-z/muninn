@@ -29,6 +29,11 @@ body {
   margin: 0;
   padding: 0;
   background: transparent;
+  /* The window never scrolls. panel.rs caps the window at 70% of the screen;
+   * when a summary is taller than that, the card must cap with it and hand the
+   * excess to .mn-scroll — a panel whose header can scroll out of sight fails
+   * design principle §2 (the first screen carries the outcome). */
+  overflow: hidden;
   /* Design principle §4: the panel is glanced at, not selected from, and a
    * stray drag must not start moving text around. */
   user-select: none;
@@ -51,6 +56,10 @@ body {
 .mn-panel {
   position: relative;
   width: var(--mn-panel-w);
+  /* Never taller than the window that holds it, shadow margin included. Below
+   * the cap this is inert and the panel sizes to content, which is what the
+   * measure-and-resize handshake in panel.ts expects. */
+  max-height: calc(100vh - var(--mn-shadow-pad-top) - var(--mn-shadow-pad));
   background: var(--mn-bg);
   border-radius: var(--mn-r);
   border: var(--mn-border);
@@ -68,6 +77,20 @@ body {
 .mn-panel a,
 .mn-panel button {
   -webkit-app-region: no-drag;
+}
+
+/* When the cap bites, only the scroll region gives. Flex children shrink by
+ * default, which here would crush the header and the footer before the scroll
+ * area ever scrolled — so everything is rigid except the one child built to
+ * give, and that child needs min-height: 0 or flex refuses to shrink it below
+ * its content. */
+.mn-panel > * {
+  flex-shrink: 0;
+}
+
+.mn-panel > .mn-scroll {
+  flex-shrink: 1;
+  min-height: 0;
 }
 
 /* A hover the app worked out for us. The panel is never the key window, so

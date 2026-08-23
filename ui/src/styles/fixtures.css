@@ -4,6 +4,9 @@
  * side by side and compared honestly. */
 
 body {
+  /* panel.css hides overflow because the real panel window must never scroll;
+   * this page is a scrolling gallery of that panel, so it takes it back. */
+  overflow: auto;
   background: #f6ece2;
   color: #43322c;
   font: 400 14px/1.55 var(--mn-font-ui);
