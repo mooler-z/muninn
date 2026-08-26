@@ -2226,7 +2226,7 @@ svg {
 }
 
 .mn-shot--single img {
-  max-width: 760px;
+  max-width: min(760px, 100%);
 }
 
 /* --- click-to-zoom --------------------------------------------------------
@@ -2464,5 +2464,160 @@ svg {
   }
   .mn-fab {
     padding: 14px;
+  }
+}
+
+/* ============ mobile ======================================================
+ *
+ * Everything added after the herdr restructure, at phone widths. The older
+ * sections have their own blocks above; these cover the stage, the strips,
+ * the plate, the command boxes and the chrome around them. One rule of
+ * thumb throughout: nothing horizontal survives — rows become columns,
+ * fixed paddings shrink, and the only thing allowed to scroll sideways is
+ * the inside of a command box.
+ */
+
+@media (max-width: 640px) {
+  /* -- hero ------------------------------------------------------------- */
+  .mn-hero-card {
+    padding-top: 104px;
+    padding-bottom: 44px;
+  }
+
+  .mn-hero-inner {
+    padding: 0 20px;
+  }
+
+  .mn-hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-align: left;
+  }
+
+  .mn-hero-sub {
+    font-size: 15px;
+  }
+
+  .mn-hero-cmd {
+    margin-top: 30px;
+  }
+
+  .mn-hero-fine {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 0 4px;
+  }
+
+  .mn-hero-strip {
+    margin-top: 40px;
+    gap: 8px 16px;
+  }
+
+  /* -- command boxes ----------------------------------------------------- */
+  .mn-oneliner {
+    padding: 12px 10px 12px 14px;
+    gap: 10px;
+  }
+
+  .mn-oneliner code {
+    font-size: 12px;
+  }
+
+  /* -- the stats band ----------------------------------------------------- */
+  .mn-stats-band {
+    padding-top: 36px;
+  }
+
+  .mn-spec-card {
+    padding: 22px 22px 24px;
+  }
+
+  .mn-spec-figure {
+    font-size: 36px;
+  }
+
+  /* -- the demo stage ------------------------------------------------------ */
+  .mn-demo {
+    margin-top: 64px;
+  }
+
+  .mn-demo-stage--shots {
+    padding: 24px 16px;
+    gap: 24px;
+  }
+
+  /* -- strips -------------------------------------------------------------- */
+  .mn-strip {
+    padding: 56px 0 8px;
+  }
+
+  .mn-strip + .mn-strip {
+    margin-top: 48px;
+  }
+
+  .mn-strip-note {
+    font-size: 14px;
+  }
+
+  .mn-shot-row {
+    gap: 18px;
+    margin-top: 30px;
+  }
+
+  /* -- the contribution tiles ---------------------------------------------- */
+  .mn-contrib .mn-tiles {
+    margin-top: 30px;
+    gap: 14px;
+  }
+
+  .mn-tile {
+    padding: 20px 20px 22px;
+  }
+
+  /* -- the privacy plate ---------------------------------------------------- */
+  .mn-plate {
+    padding: 32px 24px 36px;
+    border-radius: 22px;
+  }
+
+  .mn-plate-grid {
+    gap: 0 24px;
+    margin-top: 28px;
+  }
+
+  /* -- closer + footer ------------------------------------------------------- */
+  .mn-closer {
+    padding: 72px 0 24px;
+  }
+
+  .mn-closer-fine {
+    line-height: 2;
+  }
+
+  /* -- the lightbox ----------------------------------------------------------- */
+  .mn-lightbox {
+    padding: 14px;
+  }
+
+  .mn-lightbox img {
+    max-width: 96vw;
+    max-height: 78vh;
+  }
+
+  .mn-lightbox-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  /* The contribute button must not sit on the closer's command box. */
+  .mn-fab {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .mn-fab-card {
+    right: 14px;
+    bottom: 74px;
+    padding: 20px 20px 18px;
   }
 }
