@@ -161,9 +161,9 @@ function stopCountdown() {
  *
  * Renewable: callers say "the pointer is here now", and the hold lapses on
  * its own unless renewed — see HOLD_LEASE_MS. */
-function pauseCountdown() {
+function pauseCountdown(lease: number = HOLD_LEASE_MS) {
   held = true;
-  holdUntil = performance.now() + HOLD_LEASE_MS;
+  holdUntil = performance.now() + lease;
   if (frame === undefined) return;
   remainingMs = Math.max(0, resumeAt - performance.now());
   frozen();
@@ -252,7 +252,10 @@ void listen<Hover>("muninn://hover", (e) => applyHover(e.payload));
 
 // Kept as well, for the case where the window *has* been clicked: these fire
 // immediately, where the poller can be up to its interval late.
-root.addEventListener("mouseenter", () => pauseCountdown(), true);
+// A DOM enter only ever fires in a key window, and a key window is
+// guaranteed its mouseleave — so this hold need not expire. The poller's
+// holds do, because the poller's death must not freeze the countdown.
+root.addEventListener("mouseenter", () => pauseCountdown(Infinity), true);
 root.addEventListener("mouseleave", () => resumeCountdown(), true);
 
 // Esc dismisses, always. The panel does not hold focus when it appears — the

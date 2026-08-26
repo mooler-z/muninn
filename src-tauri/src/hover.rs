@@ -41,11 +41,9 @@ pub struct Hover {
 /// tick costs the main thread a handful of window queries.
 const POLL: Duration = Duration::from_millis(140);
 
-static WATCHING: AtomicBool = AtomicBool::new(false);
+static STARTED: AtomicBool = AtomicBool::new(false);
 /// True from posting a tick until it has run, so ticks cannot stack up.
 static PENDING: AtomicBool = AtomicBool::new(false);
-/// Set when there is nothing left to watch, so the worker retires.
-static STOP: AtomicBool = AtomicBool::new(false);
 static LAST: Mutex<Option<(bool, i64, i64)>> = Mutex::new(None);
 /// Only for the transition log line below.
 static LAST_INSIDE: Mutex<Option<bool>> = Mutex::new(None);
@@ -57,58 +55,62 @@ static LAST_BEAT: Mutex<Option<std::time::Instant>> = Mutex::new(None);
 /// the countdown under a reading pointer.
 const HEARTBEAT: Duration = Duration::from_millis(450);
 
-/// Start watching, if something is not already.
-///
-/// Safe to call for every panel; the guard means repeated shows do not stack up
-/// threads.
+/// The idle cadence, when no panel is on screen. One cheap visibility check
+/// at this rate is what "indistinguishable from zero" (§8) costs to keep the
+/// watcher immortal — the start/stop lifecycle this replaces had a shutdown
+/// race that could leave a visible panel with no watcher at all, and a
+/// countdown that only a click could unfreeze.
+const IDLE_POLL: Duration = Duration::from_millis(600);
+
+/// Start the watcher. One thread for the life of the app; calling again is
+/// free. It polls fast while the panel is visible and dawdles while it is
+/// not, instead of being started and stopped — every stop/start handoff was
+/// a race, and losing it froze the countdown under a pointer that was never
+/// coming back to click.
 pub fn watch(app: &AppHandle) {
-    STOP.store(false, Ordering::SeqCst);
-    if WATCHING.swap(true, Ordering::SeqCst) {
+    if STARTED.swap(true, Ordering::SeqCst) {
         return;
     }
 
     let app = app.clone();
-    std::thread::spawn(move || {
-        while !STOP.load(Ordering::SeqCst) {
-            std::thread::sleep(POLL);
+    std::thread::spawn(move || loop {
+        let visible = crate::panel::window(&app)
+            .map(|w| w.is_visible().unwrap_or(false))
+            .unwrap_or(false);
 
-            // Skip rather than queue. If the main thread is busy, the right
-            // response is to poll less often, not to give it more to do.
-            if PENDING.swap(true, Ordering::SeqCst) {
-                continue;
-            }
+        std::thread::sleep(if visible { POLL } else { IDLE_POLL });
 
-            let handle = app.clone();
-            let posted = app.run_on_main_thread(move || {
-                tick(&handle);
-                PENDING.store(false, Ordering::SeqCst);
-            });
-
-            if posted.is_err() {
-                PENDING.store(false, Ordering::SeqCst);
-                break; // the event loop has gone, and so should we
-            }
+        if !visible {
+            *LAST.lock().unwrap() = None;
+            continue;
         }
 
-        *LAST.lock().unwrap() = None;
-        PENDING.store(false, Ordering::SeqCst);
-        WATCHING.store(false, Ordering::SeqCst);
+        // Skip rather than queue. If the main thread is busy, the right
+        // response is to poll less often, not to give it more to do.
+        if PENDING.swap(true, Ordering::SeqCst) {
+            continue;
+        }
+
+        let handle = app.clone();
+        let posted = app.run_on_main_thread(move || {
+            tick(&handle);
+            PENDING.store(false, Ordering::SeqCst);
+        });
+
+        if posted.is_err() {
+            // The event loop is gone; so is any reason to exist.
+            return;
+        }
     });
 }
 
-/// Retire the worker — the panel is gone, so there is nothing to hover over.
-pub fn stop() {
-    STOP.store(true, Ordering::SeqCst);
-}
+/// Kept for the call sites; the watcher no longer stops, it idles.
+pub fn stop() {}
 
 /// One poll, on the main thread, where a window may be asked about itself.
 fn tick(app: &AppHandle) {
-    let Some(window) = crate::panel::window(app) else {
-        stop();
-        return;
-    };
+    let Some(window) = crate::panel::window(app) else { return };
     if !window.is_visible().unwrap_or(false) {
-        stop();
         return;
     }
 
