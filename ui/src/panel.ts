@@ -86,12 +86,21 @@ function measure() {
     requestAnimationFrame(() => {
       const panel = root.firstElementChild as HTMLElement | null;
       if (!panel) return;
+      // Measure the panel's NATURAL height, with its viewport cap lifted for
+      // the read. The stylesheet caps the panel at 100vh — the *current*
+      // window — so offsetHeight alone can never report taller than the
+      // window already is, and the window could shrink but never grow. Both
+      // writes happen inside this frame, so the un-capped state is never
+      // painted.
+      panel.style.maxHeight = "none";
+      const natural = panel.offsetHeight;
+      panel.style.maxHeight = "";
       // The window is the panel plus its shadow margin, which is asymmetric —
       // see --mn-shadow-pad-top.
       const style = getComputedStyle(document.documentElement);
       const pad = (name: string) => parseFloat(style.getPropertyValue(name));
       void invoke("resize_panel", {
-        height: panel.offsetHeight + pad("--mn-shadow-pad-top") + pad("--mn-shadow-pad"),
+        height: natural + pad("--mn-shadow-pad-top") + pad("--mn-shadow-pad"),
       });
     });
   });

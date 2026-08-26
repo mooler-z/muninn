@@ -175,6 +175,10 @@ pub fn resize(window: &WebviewWindow, content_height: f64) {
     // The floor includes the transparent border, which the frontend counts in
     // the height it reports.
     let height = content_height.clamp(SHADOW_PAD_TOP + SHADOW_PAD + 80.0, max);
+    // One line per panel: asked-for versus granted is the whole diagnosis of
+    // any "why is it this tall" question, including the one where the capped
+    // CSS height fed the measurement and the window could never grow.
+    eprintln!("muninn: panel resize asked={content_height:.0} granted={height:.0} cap={max:.0}");
 
     let _ = window.set_size(PhysicalSize::new(
         (WIDTH * scale).round() as u32,

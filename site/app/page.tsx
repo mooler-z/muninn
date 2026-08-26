@@ -92,7 +92,8 @@ export default function Home() {
               />
             </div>
             <p className="mn-hero-fine" data-intro>
-              installs the app, registers the hooks, teaches the format &middot;{" "}
+              installs the app, registers the hooks, teaches the format &middot; already
+              installed? <code className="mn-code">muninn init</code> in any project &middot;{" "}
               <a href="/api/download?from=hero">or just download the .zip</a> &middot;{" "}
               <a href="https://github.com/mooler-z/muninn">source on GitHub</a>
             </p>
@@ -423,7 +424,8 @@ export default function Home() {
             className="mn-oneliner--closer"
           />
           <p className="mn-closer-fine">
-            macOS &middot; nothing to install first &middot; run it again to update
+            macOS &middot; nothing to install first &middot; run it again to update &middot; existing
+            projects: <code className="mn-code">muninn init</code>
           </p>
         </section>
       </div>
