@@ -113,6 +113,22 @@ let remainingMs = 0;
 let resumeAt = 0;
 let arcs: NodeListOf<SVGCircleElement> | null = null;
 
+// The hover-hold is a lease, not a latch. Every "pointer is on the panel"
+// signal extends it; if nothing renews it, the countdown resumes on its own.
+// Before this, one stale inside=true froze the timer until the user clicked
+// the panel and moved away — the only path that produced a real mouseleave.
+// A wrongly-expiring lease costs a resume under a reading pointer for at most
+// a poll interval; a latch cost the panel never closing.
+const HOLD_LEASE_MS = 1500;
+let held = false;
+let holdUntil = 0;
+
+setInterval(() => {
+  if (held && performance.now() > holdUntil) {
+    resumeCountdown();
+  }
+}, 400);
+
 function paintRing(msLeft: number) {
   if (!arcs || DISMISS_AFTER_SECONDS === null) return;
   const total = DISMISS_AFTER_SECONDS * 1000;
@@ -135,17 +151,33 @@ function tick() {
 function stopCountdown() {
   if (frame !== undefined) cancelAnimationFrame(frame);
   frame = undefined;
+  // A stop is deliberate — dismissal, a repaint, Details opening. The lease
+  // must not resurrect the countdown afterwards.
+  held = false;
+  remainingMs = 0;
 }
 
-/** Hold where it is. The ring keeps whatever it is showing. */
+/** Hold where it is. The ring keeps whatever it is showing.
+ *
+ * Renewable: callers say "the pointer is here now", and the hold lapses on
+ * its own unless renewed — see HOLD_LEASE_MS. */
 function pauseCountdown() {
+  held = true;
+  holdUntil = performance.now() + HOLD_LEASE_MS;
   if (frame === undefined) return;
   remainingMs = Math.max(0, resumeAt - performance.now());
-  stopCountdown();
+  frozen();
+}
+
+/** Cancel the frame without touching the lease or the remaining time. */
+function frozen() {
+  if (frame !== undefined) cancelAnimationFrame(frame);
+  frame = undefined;
 }
 
 /** Carry on from where it stopped. */
 function resumeCountdown() {
+  held = false;
   if (frame !== undefined || remainingMs <= 0 || !arcs) return;
   resumeAt = performance.now() + remainingMs;
   frame = requestAnimationFrame(tick);

@@ -64,6 +64,14 @@ fn on_ui(app: &AppHandle, what: impl FnOnce(AppHandle) + Send + 'static) {
 fn deliver(app: &AppHandle, source: &str, kind: &str, body: &[u8]) {
     let id = format!("{}-{}", now_millis(), body.len());
     let event = normalise::normalise(source, kind, body, id);
+
+    // Claude Code's "waiting for your input" idle nudge: a reminder, not a
+    // question, about a turn whose panel already appeared. Dropped entirely —
+    // no queue, no history, no sound.
+    if normalise::idle_reminder(&event) {
+        return;
+    }
+
     let event_kind = event.kind;
 
     let state = app.state::<State>();

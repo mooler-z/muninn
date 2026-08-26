@@ -56,6 +56,19 @@ pub fn session_of(body: &[u8]) -> String {
         .unwrap_or_else(|| "?".to_string())
 }
 
+/// Claude Code's idle nudge, which is not a question.
+///
+/// Leave a session alone for a minute and the `Notification` hook fires with
+/// "Claude is waiting for your input" — a reminder about a turn whose summary
+/// already had its panel. Showing a second, emptier panel for it is exactly
+/// the "random popup when nothing is going on" experience, so it is dropped
+/// before it reaches the queue. Real asks — permission prompts, elicitation
+/// dialogs — carry their own question text and pass through untouched.
+pub fn idle_reminder(event: &MuninnEvent) -> bool {
+    event.kind == Kind::NeedsInput
+        && event.raw.trim().to_lowercase().contains("waiting for your input")
+}
+
 fn str_field(payload: &Value, key: &str) -> Option<String> {
     let s = payload.get(key)?.as_str()?.trim();
     (!s.is_empty()).then(|| s.to_string())
@@ -163,6 +176,28 @@ mod tests {
         // header loses its branch line.
         let here = Path::new(env!("CARGO_MANIFEST_DIR"));
         assert!(git_branch(here).is_some(), "should resolve a branch from {here:?}");
+    }
+
+    #[test]
+    fn the_idle_nudge_is_not_a_question() {
+        // The exact payload the stray popups carried, from a real history.
+        let body = br#"{"session_id":"x","cwd":"/tmp","message":"Claude is waiting for your input"}"#;
+        let e = normalise("claude-code", "needs-input", body, "id".into());
+        assert!(idle_reminder(&e), "the idle reminder must be dropped");
+    }
+
+    #[test]
+    fn a_real_permission_prompt_still_knocks() {
+        let body = br#"{"session_id":"x","cwd":"/tmp","message":"Claude needs your permission to use Bash"}"#;
+        let e = normalise("claude-code", "needs-input", body, "id".into());
+        assert!(!idle_reminder(&e), "a genuine ask must pass through");
+    }
+
+    #[test]
+    fn a_completed_turn_is_never_mistaken_for_a_nudge() {
+        let body = br#"{"cwd":"/tmp","last_assistant_message":"waiting for your input is a phrase I merely mentioned"}"#;
+        let e = normalise("claude-code", "completed", body, "id".into());
+        assert!(!idle_reminder(&e), "the filter is scoped to needs-input");
     }
 
     #[test]

@@ -47,6 +47,15 @@ static PENDING: AtomicBool = AtomicBool::new(false);
 /// Set when there is nothing left to watch, so the worker retires.
 static STOP: AtomicBool = AtomicBool::new(false);
 static LAST: Mutex<Option<(bool, i64, i64)>> = Mutex::new(None);
+/// Only for the transition log line below.
+static LAST_INSIDE: Mutex<Option<bool>> = Mutex::new(None);
+/// When the inside-heartbeat last went out.
+static LAST_BEAT: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+
+/// How often "still inside" is repeated for a stationary cursor. Three of
+/// these fit inside the frontend's lease, so one lost event does not resume
+/// the countdown under a reading pointer.
+const HEARTBEAT: Duration = Duration::from_millis(450);
 
 /// Start watching, if something is not already.
 ///
@@ -116,13 +125,40 @@ fn tick(app: &AppHandle) {
             Some((was, lx, ly)) => was != inside || (inside && (lx != now.1 || ly != now.2)),
             None => true,
         };
-        if changed {
+        // While the pointer rests on the panel, keep saying so. The frontend
+    // treats "held" as a lease that expires, not a latch — so a hover signal
+    // that dies (a stale emit, a retired poller) costs a briefly-wrong resume
+    // rather than a countdown frozen until the user clicks. A stationary
+    // cursor emits nothing under the change test above, which is exactly the
+    // case the lease needs renewing in.
+    let heartbeat = inside && {
+        let mut last_beat = LAST_BEAT.lock().unwrap();
+        let due = last_beat.map_or(true, |t: std::time::Instant| t.elapsed() > HEARTBEAT);
+        if due || changed {
+            *last_beat = Some(std::time::Instant::now());
+        }
+        due
+    };
+
+    if changed || heartbeat {
             *last = Some(now);
         }
         changed
     };
 
     if changed {
+        // Transitions only — a couple of lines per panel, and the one signal
+        // that explains a countdown that never ran: `inside=true` while the
+        // pointer is visibly somewhere else.
+        let flipped = {
+            let mut last_inside = LAST_INSIDE.lock().unwrap();
+            let flipped = *last_inside != Some(inside);
+            *last_inside = Some(inside);
+            flipped
+        };
+        if flipped {
+            eprintln!("muninn: hover inside={inside} at ({x:.0},{y:.0})");
+        }
         let _ = app.emit(EVENT_HOVER, Hover { inside, x, y });
     }
 }
