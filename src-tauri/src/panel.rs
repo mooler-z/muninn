@@ -33,10 +33,10 @@ const SHADOW_PAD_TOP: f64 = 24.0;
 /// What the window is actually sized to — the panel plus its shadow margin.
 pub const WIDTH: f64 = PANEL_WIDTH + SHADOW_PAD * 2.0;
 /// Past this the panel scrolls internally rather than growing off-screen.
-const MAX_HEIGHT_FRACTION: f64 = 0.85;
+const MAX_HEIGHT_FRACTION: f64 = 0.6;
 
 // "It never covers the centre of the screen" — design principle §4.
-const _: () = assert!(MAX_HEIGHT_FRACTION < 0.9);
+const _: () = assert!(MAX_HEIGHT_FRACTION < 0.8);
 
 pub fn window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(PANEL)
