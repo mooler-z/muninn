@@ -447,31 +447,36 @@ svg {
 }
 
 /* Both icons ship; the theme decides which is drawn. Cheaper and less
- * flickery than swapping nodes, and it works before any script runs. */
+ * flickery than swapping nodes, and it works before any script runs.
+ *
+ * The icon is the DESTINATION, not the state: a moon on the light page
+ * ("press for dark"), a sun on the dark one. A toggle labelled with where
+ * you already are reads as a status light; labelled with where it takes
+ * you, it reads as a button. */
 .mn-icon-sun,
 .mn-icon-moon {
   display: none;
 }
 
-:root:not([data-theme]) .mn-icon-moon,
-[data-theme="dark"] .mn-icon-moon {
+:root:not([data-theme]) .mn-icon-sun,
+[data-theme="dark"] .mn-icon-sun {
   display: block;
 }
 
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .mn-icon-moon {
+  :root:not([data-theme]) .mn-icon-sun {
     display: none;
   }
-  :root:not([data-theme]) .mn-icon-sun {
+  :root:not([data-theme]) .mn-icon-moon {
     display: block;
   }
 }
 
-[data-theme="light"] .mn-icon-sun {
+[data-theme="light"] .mn-icon-moon {
   display: block;
 }
 
-[data-theme="light"] .mn-icon-moon {
+[data-theme="light"] .mn-icon-sun {
   display: none;
 }
 
