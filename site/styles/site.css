@@ -2621,3 +2621,11 @@ svg {
     padding: 20px 20px 18px;
   }
 }
+
+/* The skill aside in the contract strip — quieter than the note above it,
+ * because it is an option, not the mechanism. */
+.mn-strip-note--aside {
+  margin-top: 14px;
+  font-size: 13.5px;
+  color: var(--mn-fg-3);
+}

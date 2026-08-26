@@ -231,6 +231,15 @@ export default function Home() {
               an invented one. And <span className="mn-claim">tests pass</span>, said by your
               agent, stays a quotation &mdash; Muninn quotes, it never vouches.
             </p>
+            <p className="mn-strip-note mn-strip-note--aside">
+              Prefer skills to rules? <code className="mn-code">muninn init --skill</code> also
+              installs a <code className="mn-code">/muninn</code> skill &mdash; the same contract,
+              invocable on demand: &ldquo;summarize that diff as a muninn block&rdquo;, or re-emit
+              a summary the panel missed. The rule stays the backbone, because a closing summary
+              is an every-turn obligation and skills load when the model judges them relevant
+              &mdash; the wrong trigger for &ldquo;always&rdquo;. Either way your{" "}
+              <code className="mn-code">CLAUDE.md</code> stays at one line.
+            </p>
           </article>
 
           <article className="mn-strip" data-reveal>

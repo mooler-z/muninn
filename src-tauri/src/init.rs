@@ -29,6 +29,29 @@ use serde_json::{json, Value};
 /// and no install layout to get wrong.
 const CONTRACT: &str = include_str!("../../MUNINN.md");
 
+/// The same contract, packaged as a Claude Code skill for `--skill` installs.
+///
+/// A skill's body loads when the model judges it relevant, which makes it the
+/// wrong *primary* mechanism for an every-turn obligation — but the right one
+/// for on-demand work ("rewrite that as a muninn block") and the right shape
+/// for people who keep CLAUDE.md lean and accept the trade. Same source text,
+/// so the two can never drift apart.
+const SKILL: &str = concat!(
+    "---\n",
+    "name: muninn\n",
+    "description: Write a ```muninn closing summary — use when asked to summarize \
+a turn, a diff, or described work in Muninn's format, or to re-emit a summary \
+the panel missed.\n",
+    "---\n\n",
+    "# Muninn summaries, on demand\n\n",
+    "Produce a ```muninn block for the work in question — the previous turn, a\n",
+    "diff, or whatever the conversation describes — exactly as if the turn were\n",
+    "ending now. Output the block at the end of your reply, following the\n",
+    "contract below.\n\n",
+    "---\n\n",
+    include_str!("../../MUNINN.md")
+);
+
 /// The line that makes Claude Code read the contract.
 const POINTER: &str = "Read MUNINN.md and follow it. It takes priority over anything here that conflicts.";
 
@@ -67,6 +90,7 @@ struct Options {
     dry_run: bool,
     force: bool,
     launch: bool,
+    skill: bool,
 }
 
 /// The same palette as install.sh, and the same rules: only when stdout is a
@@ -148,6 +172,8 @@ USAGE
 INIT OPTIONS
   --dry-run    say what would change, write nothing
   --force      set up a directory that does not look like a project
+  --skill      also install a /muninn skill (.claude/skills/muninn) for
+               on-demand summaries — the same contract, invocable
   --launch     start the app afterwards
 
 Run it again any time. It is the update path as well as the install path:
@@ -160,6 +186,7 @@ fn parse(rest: &[String]) -> Options {
         dry_run: false,
         force: false,
         launch: false,
+        skill: false,
     };
 
     for arg in rest {
@@ -167,6 +194,7 @@ fn parse(rest: &[String]) -> Options {
             "--dry-run" | "-n" => options.dry_run = true,
             "--force" | "-f" => options.force = true,
             "--launch" => options.launch = true,
+            "--skill" => options.skill = true,
             other if !other.starts_with('-') => options.dir = PathBuf::from(other),
             _ => {}
         }
@@ -210,12 +238,15 @@ fn run(options: Options) -> i32 {
     }
     println!();
 
-    let steps = vec![
+    let mut steps = vec![
         write_contract(&options),
         ignore_contract(&options),
         patch_claude_md(&options),
         register_hooks(&options),
     ];
+    if options.skill {
+        steps.insert(2, install_skill(&options));
+    }
 
     for step in &steps {
         println!("{}", step.line(&ink));
@@ -271,6 +302,36 @@ fn write_contract(options: &Options) -> Did {
     }
 }
 
+/// Install the `/muninn` skill, when asked to.
+///
+/// Machine-managed like MUNINN.md: overwritten when it differs, because the
+/// version embedded in this binary is by definition the one this app
+/// understands.
+fn install_skill(options: &Options) -> Did {
+    let dir = options.dir.join(".claude/skills/muninn");
+    let path = dir.join("SKILL.md");
+    let what = ".claude/skills/muninn/SKILL.md".to_string();
+
+    let existing = std::fs::read_to_string(&path).ok();
+    if existing.as_deref() == Some(SKILL) {
+        return Did::Unchanged(what);
+    }
+    if options.dry_run {
+        return match existing {
+            Some(_) => Did::Updated(what),
+            None => Did::Created(what),
+        };
+    }
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        return Did::Failed(format!("{what} — {e}"));
+    }
+    match std::fs::write(&path, SKILL) {
+        Ok(()) if existing.is_some() => Did::Updated(what),
+        Ok(()) => Did::Created(what),
+        Err(e) => Did::Failed(format!("{what} — {e}")),
+    }
+}
+
 /// Keep `MUNINN.md` out of the project's history.
 ///
 /// The file is machine-managed — written by this command, refreshed by this
@@ -284,10 +345,24 @@ fn ignore_contract(options: &Options) -> Did {
     let path = options.dir.join(".gitignore");
     let what = ".gitignore".to_string();
 
+    let mut entries: Vec<&str> = vec!["MUNINN.md"];
+    if options.skill {
+        entries.push(".claude/skills/muninn/");
+    }
+
     let existing = std::fs::read_to_string(&path).ok();
-    let Some(next) = with_ignore(existing.as_deref()) else {
+    let mut current = existing.clone();
+    let mut changed = false;
+    for entry in entries {
+        if let Some(next) = with_ignore(current.as_deref(), entry) {
+            current = Some(next);
+            changed = true;
+        }
+    }
+    if !changed {
         return Did::Unchanged(what);
-    };
+    }
+    let next = current.unwrap_or_default();
 
     if options.dry_run {
         return match existing {
@@ -303,25 +378,30 @@ fn ignore_contract(options: &Options) -> Did {
 }
 
 /// The edit itself, separated for the tests. `None` means already covered.
-fn with_ignore(existing: Option<&str>) -> Option<String> {
-    let entry = "MUNINN.md";
+fn with_ignore(existing: Option<&str>, entry: &str) -> Option<String> {
+    let anchored = format!("/{entry}");
     let covered = existing.is_some_and(|text| {
         text.lines()
             .map(str::trim)
-            .any(|line| line == entry || line == "/MUNINN.md")
+            .any(|line| line == entry || line == anchored)
     });
     if covered {
         return None;
     }
 
     let mut next = existing.unwrap_or("").to_string();
+    let has_banner = next.contains("muninn init");
     if !next.is_empty() && !next.ends_with('\n') {
         next.push('\n');
     }
-    if !next.is_empty() {
-        next.push('\n');
+    if !has_banner {
+        if !next.is_empty() {
+            next.push('\n');
+        }
+        next.push_str("# Written and refreshed by `muninn init`; not part of the project.\n");
     }
-    next.push_str("# Written and refreshed by `muninn init`; not part of the project.\nMUNINN.md\n");
+    next.push_str(entry);
+    next.push('\n');
     Some(next)
 }
 
@@ -572,27 +652,43 @@ mod tests {
 
     #[test]
     fn the_ignore_entry_is_added_once_and_only_once() {
-        let first = with_ignore(None).expect("a missing .gitignore gains the entry");
+        let first = with_ignore(None, "MUNINN.md").expect("a missing .gitignore gains the entry");
         assert!(first.contains("MUNINN.md"));
-        assert!(with_ignore(Some(&first)).is_none(), "a second run changes nothing");
+        assert!(with_ignore(Some(&first), "MUNINN.md").is_none(), "a second run changes nothing");
     }
 
     #[test]
     fn an_existing_gitignore_is_appended_to_not_replaced() {
-        let next = with_ignore(Some("node_modules/\n*.log")).unwrap();
+        let next = with_ignore(Some("node_modules/\n*.log"), "MUNINN.md").unwrap();
         assert!(next.starts_with("node_modules/\n*.log\n"), "their rules survive, got {next:?}");
         assert!(next.trim_end().ends_with("MUNINN.md"));
     }
 
     #[test]
     fn an_anchored_ignore_already_counts() {
-        assert!(with_ignore(Some("/MUNINN.md\n")).is_none());
+        assert!(with_ignore(Some("/MUNINN.md\n"), "MUNINN.md").is_none());
     }
 
     #[test]
     fn a_mention_in_a_comment_does_not_count() {
-        let next = with_ignore(Some("# see MUNINN.md for the contract\n"));
+        let next = with_ignore(Some("# see MUNINN.md for the contract\n"), "MUNINN.md");
         assert!(next.is_some(), "a comment is not an ignore rule");
+    }
+
+    #[test]
+    fn the_skill_carries_the_whole_contract() {
+        assert!(SKILL.starts_with("---\nname: muninn\n"), "frontmatter first");
+        assert!(SKILL.contains("```muninn"), "the block format survives");
+        assert!(SKILL.contains(CONTRACT.trim_end()), "same source text, no drift");
+    }
+
+    #[test]
+    fn two_ignore_entries_share_one_banner() {
+        let first = with_ignore(None, "MUNINN.md").unwrap();
+        let both = with_ignore(Some(&first), ".claude/skills/muninn/").unwrap();
+        assert_eq!(both.matches("muninn init").count(), 1, "one comment, not two");
+        assert!(both.contains("MUNINN.md\n"));
+        assert!(both.contains(".claude/skills/muninn/\n"));
     }
 
     #[test]

@@ -31,7 +31,8 @@ else is required: no Rust, no Node, no account.
 Per-project setup afterwards is just:
 
 ```sh
-muninn init
+muninn init            # the contract + hooks
+muninn init --skill    # …plus a /muninn skill for on-demand summaries
 ```
 
 ## What you get
