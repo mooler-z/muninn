@@ -212,6 +212,7 @@ fn run(options: Options) -> i32 {
 
     let steps = vec![
         write_contract(&options),
+        ignore_contract(&options),
         patch_claude_md(&options),
         register_hooks(&options),
     ];
@@ -232,7 +233,7 @@ fn run(options: Options) -> i32 {
     }
 
     println!(
-        "\n{}Done.{} Your agent will knock when it finishes a turn.\n{}Commit MUNINN.md and the CLAUDE.md block — they describe the project,\nnot this machine, so they are useful to everyone who works on it.{}",
+        "\n{}Done.{} Your agent will knock when it finishes a turn.\n{}MUNINN.md is gitignored — teammates run `muninn init` to get their own.\nCommit the CLAUDE.md block; it is one line and it is the project's.{}",
         ink.accent, ink.reset, ink.dim, ink.reset
     );
 
@@ -268,6 +269,60 @@ fn write_contract(options: &Options) -> Did {
         Ok(()) => Did::Created(what),
         Err(e) => Did::Failed(format!("MUNINN.md — {e}")),
     }
+}
+
+/// Keep `MUNINN.md` out of the project's history.
+///
+/// The file is machine-managed — written by this command, refreshed by this
+/// command — and the owner's call is that generated files do not belong in the
+/// repo. So the same run that writes it also teaches git to ignore it. The
+/// entry is one exact line; a repo that already ignores it (this pattern or
+/// its anchored form) is left alone, and a tracked MUNINN.md somewhere stays
+/// tracked — gitignore only governs untracked files, and this command does
+/// not fight anyone's `git add -f`.
+fn ignore_contract(options: &Options) -> Did {
+    let path = options.dir.join(".gitignore");
+    let what = ".gitignore".to_string();
+
+    let existing = std::fs::read_to_string(&path).ok();
+    let Some(next) = with_ignore(existing.as_deref()) else {
+        return Did::Unchanged(what);
+    };
+
+    if options.dry_run {
+        return match existing {
+            Some(_) => Did::Updated(what),
+            None => Did::Created(what),
+        };
+    }
+    match std::fs::write(&path, next) {
+        Ok(()) if existing.is_some() => Did::Updated(what),
+        Ok(()) => Did::Created(what),
+        Err(e) => Did::Failed(format!(".gitignore — {e}")),
+    }
+}
+
+/// The edit itself, separated for the tests. `None` means already covered.
+fn with_ignore(existing: Option<&str>) -> Option<String> {
+    let entry = "MUNINN.md";
+    let covered = existing.is_some_and(|text| {
+        text.lines()
+            .map(str::trim)
+            .any(|line| line == entry || line == "/MUNINN.md")
+    });
+    if covered {
+        return None;
+    }
+
+    let mut next = existing.unwrap_or("").to_string();
+    if !next.is_empty() && !next.ends_with('\n') {
+        next.push('\n');
+    }
+    if !next.is_empty() {
+        next.push('\n');
+    }
+    next.push_str("# Written and refreshed by `muninn init`; not part of the project.\nMUNINN.md\n");
+    Some(next)
 }
 
 /// Add the pointer to `CLAUDE.md`, inside markers, without disturbing the rest.
@@ -513,6 +568,31 @@ mod tests {
 
     fn block() -> String {
         format!("{BEGIN}\n{POINTER}\n{END}\n")
+    }
+
+    #[test]
+    fn the_ignore_entry_is_added_once_and_only_once() {
+        let first = with_ignore(None).expect("a missing .gitignore gains the entry");
+        assert!(first.contains("MUNINN.md"));
+        assert!(with_ignore(Some(&first)).is_none(), "a second run changes nothing");
+    }
+
+    #[test]
+    fn an_existing_gitignore_is_appended_to_not_replaced() {
+        let next = with_ignore(Some("node_modules/\n*.log")).unwrap();
+        assert!(next.starts_with("node_modules/\n*.log\n"), "their rules survive, got {next:?}");
+        assert!(next.trim_end().ends_with("MUNINN.md"));
+    }
+
+    #[test]
+    fn an_anchored_ignore_already_counts() {
+        assert!(with_ignore(Some("/MUNINN.md\n")).is_none());
+    }
+
+    #[test]
+    fn a_mention_in_a_comment_does_not_count() {
+        let next = with_ignore(Some("# see MUNINN.md for the contract\n"));
+        assert!(next.is_some(), "a comment is not an ignore rule");
     }
 
     #[test]
