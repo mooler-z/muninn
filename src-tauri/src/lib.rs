@@ -282,7 +282,25 @@ fn release_focus(app: &AppHandle) {
         }
 
         let Some(marker) = objc2::MainThreadMarker::new() else { return };
-        objc2_app_kit::NSApplication::sharedApplication(marker).deactivate();
+        let ns = objc2_app_kit::NSApplication::sharedApplication(marker);
+
+        // Only meddle when Muninn actually holds the focus — the panel opens
+        // without taking it, so unless the user clicked one of these windows
+        // there is nothing to give back.
+        if !ns.isActive() {
+            return;
+        }
+
+        // `hide`, not `deactivate`. Deactivate resigns active status without
+        // activating anyone else, which strands the focus on a window that is
+        // no longer on screen — the user's cursor keeps typing into nothing.
+        // Hiding is the AppKit verb that hands activation back to the
+        // previously active app. Its trap is that a hidden app refuses to
+        // show windows, which for an app whose windows are all hidden-not-
+        // destroyed would mean no panel ever appears again — so the hidden
+        // flag is cleared in the same breath, without re-activating.
+        ns.hide(None);
+        unsafe { ns.unhideWithoutActivation() };
     });
 }
 
@@ -601,7 +619,16 @@ pub fn run() {
                     let body = String::from_utf8_lossy(&received.body).to_string();
                     let handle = receiver_handle.clone();
                     let _ = receiver_handle.run_on_main_thread(move || {
-                        if body.contains("open-history") {
+                        if body.contains("activate") {
+                            // Simulates the user clicking a window, which is
+                            // the one thing a test cannot do from outside an
+                            // accessory app. Debug-only, like everything here.
+                            if let Some(m) = objc2::MainThreadMarker::new() {
+                                #[allow(deprecated)]
+                                objc2_app_kit::NSApplication::sharedApplication(m)
+                                    .activateIgnoringOtherApps(true);
+                            }
+                        } else if body.contains("open-history") {
                             history_window::open(&handle);
                         } else if body.contains("close-history") {
                             history_window::close(&handle);
